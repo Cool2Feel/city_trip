@@ -9,9 +9,13 @@ on:
     - cron: '0 18 * * *'
   workflow_dispatch: {}
 
-# 允许提交烘焙数据回仓库（构建期兜底 / B 通道）并推 gh-pages（A 通道）
+# 权限：
+#  - contents: write  —— 提交烘焙数据回仓库（构建期兜底 / B 通道）
+#  - pages: write + id-token: write —— 用官方 Actions 方式部署 GitHub Pages
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 # 避免同一时刻多次运行互相覆盖
 concurrency:
@@ -21,6 +25,10 @@ concurrency:
 jobs:
   bake:
     runs-on: ubuntu-latest
+    # Pages 官方部署模式需要在 job 上声明 environment（固定名称 github-pages）
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,7 +55,7 @@ jobs:
       - name: Validate baked data (gate)
         run: node miniprogram/utils/validate_bake.js
 
-      # 4) 合并为运行时可拉取的 JSON（供 GitHub Pages / jsDelivr 托管）
+      # 4) 合并为运行时可拉取的 JSON（供 GitHub Pages 托管）
       - name: Build runtime JSON
         run: |
           mkdir -p bake-dist
@@ -63,14 +71,16 @@ jobs:
           commit_message: 'chore: auto-bake city data [skip ci]'
           file_pattern: 'miniprogram/utils/realCityData*.js bake-dist/cityData.json'
 
-      # 6) 发布到 GitHub Pages（运行时拉取通道 A）。
-      #    仓库需开启：Settings → Pages → Source: Deploy from a branch → gh-pages
-      #    发布后 URL：https://<owner>.github.io/<repo>/cityData.json
-      #    另可选 jsDelivr（无需开 Pages）：
-      #    https://cdn.jsdelivr.net/gh/<owner>/<repo>@<branch>/bake-dist/cityData.json
-      - name: Publish to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      # 6) 用官方 Actions 方式部署到 GitHub Pages（运行时拉取通道 A）。
+      #    注意：仓库 Pages 设置 Build and deployment → Source 必须选
+      #          **「GitHub Actions」**（不是 Deploy from a branch），
+      #          这样就不需要 gh-pages 分支。
+      #    部署后访问：https://<owner>.github.io/<repo>/cityData.json
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./bake-dist
-          publish_branch: gh-pages
+          path: ./bake-dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
