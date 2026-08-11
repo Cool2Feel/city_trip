@@ -1,0 +1,76 @@
+name: Bake city trip data
+
+# 触发：
+#  - schedule: 每天北京时间 02:00 自动抓取（GitHub Actions 用 UTC，
+#              02:00 CST = 前一天 18:00 UTC）
+#  - workflow_dispatch: 在 Actions 页面手动点「Run workflow」随时触发
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch: {}
+
+# 允许提交烘焙数据回仓库（构建期兜底 / B 通道）并推 gh-pages（A 通道）
+permissions:
+  contents: write
+
+# 避免同一时刻多次运行互相覆盖
+concurrency:
+  group: bake-data
+  cancel-in-progress: false
+
+jobs:
+  bake:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # 1) 抓取 citymap.348349.xyz（无需 key，坐标为 GCJ-02，与微信 map 同系）
+      - name: Bake from citymap (no key)
+        run: node miniprogram/utils/gen_citymap_report.js
+
+      # 2) 烘焙权威源（腾讯地图 / 和风天气）。
+      #    未配置 secret 或配额耗尽时，生成器会优雅回落到 bundled，不会失败。
+      - name: Bake authoritative (Tencent / 和风)
+        env:
+          TENCENT_MAP_KEY: ${{ secrets.TENCENT_MAP_KEY }}
+          QWEATHER_KEY: ${{ secrets.QWEATHER_KEY }}
+        run: node miniprogram/utils/gen_real_reports.js
+
+      # 3) 校验闸门：坐标越界 / 缺字段 / authSource 非法 → exit(1)，
+      #    本步骤失败则后续不提交、不发布，保留上一版可用数据。
+      - name: Validate baked data (gate)
+        run: node miniprogram/utils/validate_bake.js
+
+      # 4) 合并为运行时可拉取的 JSON（供 GitHub Pages / jsDelivr 托管）
+      - name: Build runtime JSON
+        run: |
+          mkdir -p bake-dist
+          node -e "const fs=require('fs');const a=require('./miniprogram/utils/realCityData_citymap_pilot.js').REAL_REPORTS_CITYMAP;const b=require('./miniprogram/utils/realCityData.js').REAL_REPORTS;const out=Object.assign({},b,a);fs.writeFileSync('bake-dist/cityData.json',JSON.stringify(out));console.log('[bake] CDN cities:',Object.keys(out).length);"
+
+      # 5) 提交烘焙数据回仓库（[skip ci] 防止触发自身死循环）。
+      #    continue-on-error：即使本次数据无变化（生成器确定性输出）导致无提交，
+      #    也不阻断后续的 Pages 发布（实时通道必须始终执行）。
+      - name: Commit baked data
+        continue-on-error: true
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore: auto-bake city data [skip ci]'
+          file_pattern: 'miniprogram/utils/realCityData*.js bake-dist/cityData.json'
+
+      # 6) 发布到 GitHub Pages（运行时拉取通道 A）。
+      #    仓库需开启：Settings → Pages → Source: Deploy from a branch → gh-pages
+      #    发布后 URL：https://<owner>.github.io/<repo>/cityData.json
+      #    另可选 jsDelivr（无需开 Pages）：
+      #    https://cdn.jsdelivr.net/gh/<owner>/<repo>@<branch>/bake-dist/cityData.json
+      - name: Publish to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./bake-dist
+          publish_branch: gh-pages
