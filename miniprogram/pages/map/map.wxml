@@ -1,0 +1,217 @@
+<!-- pages/map/map.wxml - v3.0 组件化版 -->
+<view class="map-page">
+  <!-- 顶部搜索与城市 -->
+  <view class="map-top">
+    <view class="map-city-bar" bindtap="selectCity" hover-class="hover-bg">
+      <text>📍 {{currentCity ? currentCity.name : '选择城市'}}</text>
+    </view>
+    <view class="map-search-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="map-search-input"
+        placeholder="搜索地点/地址"
+        placeholder-class="search-placeholder"
+        value="{{searchText}}"
+        bindinput="onSearchInput"
+        confirm-type="search"
+      />
+      <text class="search-clear" wx:if="{{searchText}}" bindtap="clearSearch">✕</text>
+    </view>
+  </view>
+
+  <!-- 分类筛选Pills -->
+  <scroll-view scroll-x class="category-pills-scroll" enhanced show-scrollbar="{{false}}">
+    <view class="category-pills">
+      <view class="cat-pill all-toggle" bindtap="toggleAll" hover-class="cat-pill-hover">
+        <text>全选</text>
+      </view>
+      <view
+        class="cat-pill {{activeCategories[item.id] ? 'active' : ''}}"
+        wx:for="{{categories}}"
+        wx:key="id"
+        data-cat="{{item.id}}"
+        bindtap="toggleCategory"
+        hover-class="cat-pill-hover"
+        style="--cat-color: {{item.color}};"
+      >
+        <view class="cat-pill-dot" style="background: {{item.color}};"></view>
+        <text class="cat-pill-name">{{item.name}}</text>
+        <text class="cat-pill-letter" style="color: {{item.color}};">{{item.letter}}</text>
+      </view>
+    </view>
+  </scroll-view>
+
+  <!-- 路线切换条 -->
+  <view class="route-bar" wx:if="{{routes.length > 0}}">
+    <view class="route-toggle-btn {{showRoute ? 'active' : ''}}" bindtap="toggleRoute" hover-class="hover-bg">
+      <text>{{showRoute ? '隐藏路线' : '显示路线'}}</text>
+    </view>
+    <scroll-view scroll-x class="route-tabs" wx:if="{{showRoute}}" enhanced show-scrollbar="{{false}}">
+      <view class="route-tab-list">
+        <view
+          class="route-tab {{activeRouteId === item.id ? 'active' : ''}}"
+          wx:for="{{routes}}"
+          wx:key="id"
+          data-index="{{index}}"
+          bindtap="switchRoute"
+          hover-class="route-tab-hover"
+          style="border-color: {{activeRouteId === item.id ? item.color : 'transparent'}}; color: {{activeRouteId === item.id ? item.color : '#666'}};"
+        >
+          <text>{{item.icon}} {{item.name}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 骨架屏 -->
+  <view class="map-skeleton" wx:if="{{loading}}">
+    <view class="skeleton-map-area"></view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="map-empty" wx:elif="{{markers.length === 0 && !searchText}}">
+    <text class="map-empty-icon">🗺️</text>
+    <text class="map-empty-text">{{dataLoading ? '加载中...' : (currentCity ? '该城市暂无地点数据' : '请先选择城市')}}</text>
+    <view class="btn btn-primary" bindtap="selectCity" hover-class="btn-primary-hover" wx:if="{{!currentCity}}">
+      <text>选择城市</text>
+    </view>
+    <view class="btn btn-outline" bindtap="retryLoad" hover-class="btn-outline-hover" wx:if="{{currentCity && !dataLoading}}">
+      <text>🔄 刷新地点数据</text>
+    </view>
+  </view>
+
+  <!-- 地图 -->
+  <view class="map-container {{selectedPlace ? 'with-detail' : ''}}" wx:else>
+    <map
+      id="cityMap"
+      class="map-view"
+      latitude="{{cityCenter.latitude}}"
+      longitude="{{cityCenter.longitude}}"
+      markers="{{markers}}"
+      polyline="{{polyline}}"
+      scale="{{scale}}"
+      show-location
+      enable-zoom
+      enable-scroll
+      enable-overlooking
+      enable-traffic="{{false}}"
+      bindmarkertap="onMarkerTap"
+      bindregionchange="onRegionChange"
+    ></map>
+
+    <!-- 聚类提示 -->
+    <view class="cluster-hint" wx:if="{{showClusterHint && clusterStats.clusterCount > 0}}">
+      <text class="cluster-hint-text">附近点位较集中，已为你合并显示 {{clusterStats.clusterCount}} 处</text>
+      <text class="cluster-hint-close" bindtap="dismissClusterHint">✕</text>
+    </view>
+
+    <!-- 地图控件 -->
+    <view class="map-controls">
+      <view class="map-ctrl-btn" bindtap="moveToLocation" hover-class="ctrl-btn-hover">
+        <text>📍</text>
+      </view>
+      <view class="map-ctrl-btn" bindtap="zoomIn" hover-class="ctrl-btn-hover">
+        <text>＋</text>
+      </view>
+      <view class="map-ctrl-btn" bindtap="zoomOut" hover-class="ctrl-btn-hover">
+        <text>－</text>
+      </view>
+    </view>
+
+    <!-- 地点计数 -->
+    <view class="map-count">
+      <text>当前显示 {{clusterStats.displayed > 0 ? clusterStats.displayed : filteredPlaces.length}} / {{filteredPlaces.length}} 个推荐点{{showRoute ? ' · 路线' + activeRouteId : ''}}</text>
+      <text class="map-update-time" wx:if="{{dataUpdateTime}}"> · 更新于 {{dataUpdateTime}}</text>
+    </view>
+  </view>
+
+  <!-- 地点列表 -->
+  <view class="places-list-section" wx:if="{{!loading && markers.length > 0 && showList && !selectedPlace && filteredPlaces.length > 0}}">
+    <view class="places-list-header">
+      <text class="places-list-title">推荐点 ({{filteredPlaces.length}})</text>
+      <view class="places-list-toggle" bindtap="toggleView" hover-class="hover-bg">
+        <text>收起 ▾</text>
+      </view>
+    </view>
+    <scroll-view scroll-y class="places-list" enhanced show-scrollbar="{{false}}">
+      <view
+        class="place-card"
+        wx:for="{{filteredPlaces}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="selectPlace"
+        hover-class="place-card-hover"
+      >
+        <view class="place-card-marker" style="background: {{item._color}};">
+          <text class="place-card-letter">{{item._letter}}</text>
+        </view>
+        <view class="place-card-info">
+          <text class="place-card-name">{{item.name}}</text>
+          <text class="place-card-address">{{item.address}}</text>
+          <view class="place-card-tags">
+            <text class="place-card-note" wx:if="{{item.note}}">{{item.note}}</text>
+            <text class="place-card-price" wx:if="{{item.price}}">{{item.price}}</text>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 搜索无结果空状态 -->
+  <view class="places-list-section" wx:if="{{!loading && searchText && filteredPlaces.length === 0}}">
+    <view class="search-empty-state">
+      <text class="search-empty-icon">🔍</text>
+      <text class="search-empty-text">未找到 "{{searchText}}" 相关地点</text>
+      <view class="btn btn-outline search-clear-btn" bindtap="clearSearch" hover-class="btn-outline-hover">
+        <text>清除搜索</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 展开列表按钮 -->
+  <view class="expand-list-btn" wx:if="{{!loading && markers.length > 0 && !showList && !selectedPlace}}" bindtap="toggleView" hover-class="hover-bg">
+    <text>展开列表 ▴</text>
+  </view>
+
+  <!-- 地点详情弹窗 -->
+  <view class="place-detail-overlay" wx:if="{{selectedPlace}}" bindtap="closeDetail"></view>
+  <view class="place-detail-sheet" wx:if="{{selectedPlace}}">
+    <view class="place-detail-handle"></view>
+    <view class="place-detail-header">
+      <view class="place-detail-marker" style="background: {{selectedPlace._color || '#999'}};">
+        <text>{{selectedPlace._letter || '?'}}</text>
+      </view>
+      <text class="place-detail-name">{{selectedPlace.name}}</text>
+      <text class="place-detail-close" bindtap="closeDetail">✕</text>
+    </view>
+    <view class="place-detail-body">
+      <view class="place-detail-row" wx:if="{{selectedPlace.address}}">
+        <text class="place-detail-label">📍 地址</text>
+        <text class="place-detail-value">{{selectedPlace.address}}</text>
+      </view>
+      <view class="place-detail-row" wx:if="{{selectedPlace.note}}">
+        <text class="place-detail-label">📝 备注</text>
+        <text class="place-detail-value">{{selectedPlace.note}}</text>
+      </view>
+      <view class="place-detail-row" wx:if="{{selectedPlace.price}}">
+        <text class="place-detail-label">💰 价格</text>
+        <text class="place-detail-value">{{selectedPlace.price}}</text>
+      </view>
+    </view>
+    <!-- 外链入口 -->
+    <view class="place-detail-external" wx:if="{{selectedPlace._extLink}}">
+      <view class="ext-link-btn" bindtap="openExternal" hover-class="hover-bg">
+        <text>{{selectedPlace._extLink.icon}} {{selectedPlace._extLink.name}} ›</text>
+      </view>
+    </view>
+    <!-- 导航+分享 -->
+    <view class="place-detail-actions">
+      <view class="btn btn-primary place-nav-btn" bindtap="navigateToPlace" hover-class="btn-primary-hover">
+        <text>🧭 导航到这里</text>
+      </view>
+      <button class="btn btn-outline place-share-btn" open-type="share">
+        <text>📤 分享</text>
+      </button>
+    </view>
+  </view>
+</view>

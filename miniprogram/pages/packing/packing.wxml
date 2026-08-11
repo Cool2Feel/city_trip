@@ -1,0 +1,62 @@
+<!-- pages/packing/packing.wxml - A1 出行清单 -->
+<view class="packing-page">
+  <!-- 头部 -->
+  <view class="packing-header">
+    <view class="packing-header-bg"></view>
+    <view class="packing-header-content">
+      <text class="packing-title">🎒 出行清单</text>
+      <text class="packing-sub" wx:if="{{cityName}}">{{cityName}} · 周末出游随身物品</text>
+      <text class="packing-sub" wx:else>周末出游随身物品</text>
+    </view>
+  </view>
+
+  <!-- 进度 -->
+  <view class="packing-progress-card">
+    <view class="packing-progress-top">
+      <text class="packing-progress-label">打包进度</text>
+      <text class="packing-progress-value">{{progress.checked}}/{{progress.total}}（{{progress.percent}}%）</text>
+    </view>
+    <view class="packing-progress-bar">
+      <view class="packing-progress-fill" style="width: {{progress.percent}}%;"></view>
+    </view>
+    <text class="packing-progress-tip" wx:if="{{progress.percent === 100}}">🎉 全部装好，出发吧！</text>
+    <text class="packing-progress-tip" wx:else>勾选已装入背包的物品，出行前对照检查</text>
+  </view>
+
+  <!-- 分类清单 -->
+  <view class="packing-groups">
+    <view class="packing-group" wx:for="{{groups}}" wx:key="cat" wx:for-item="grp">
+      <view class="packing-group-header">
+        <text class="packing-group-icon">{{grp.icon}}</text>
+        <text class="packing-group-name">{{grp.cat}}</text>
+      </view>
+      <view class="packing-item" wx:for="{{grp.items}}" wx:for-item="it" wx:key="id">
+        <view class="packing-check {{it.checked ? 'checked' : ''}}" data-id="{{it.id}}" bindtap="toggleItem" hover-class="hover-bg">
+          <text wx:if="{{it.checked}}">✓</text>
+        </view>
+        <text class="packing-item-text {{it.checked ? 'checked' : ''}}">{{it.text}}</text>
+        <view class="packing-item-del" wx:if="{{it.custom}}" data-id="{{it.id}}" catchtap="removeItem" hover-class="hover-bg">✕</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 自定义添加 -->
+  <view class="packing-add-card" wx:if="{{showAdd}}">
+    <input class="packing-add-input" placeholder="添加自定义物品，如：颈部枕" value="{{newItem}}" bindinput="onNewInput" confirm-type="done" bindconfirm="addItem" focus="{{showAdd}}" />
+    <view class="packing-add-btn" bindtap="addItem" hover-class="hover-bg">添加</view>
+  </view>
+
+  <!-- 操作 -->
+  <view class="packing-actions">
+    <view class="btn btn-outline packing-action-btn" bindtap="toggleAdd" hover-class="hover-bg">
+      <text>{{showAdd ? '收起添加' : '➕ 添加物品'}}</text>
+    </view>
+    <view class="btn btn-outline packing-action-btn" bindtap="resetAll" hover-class="hover-bg">
+      <text>♻️ 重置默认</text>
+    </view>
+  </view>
+
+  <view class="packing-footer">
+    <text>清单数据仅保存在本机，可结合天气自行增减</text>
+  </view>
+</view>

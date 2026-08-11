@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>周末城市游 - 微信小程序预览</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+
+  /* 预览容器 */
+  .preview-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  /* 标题区 */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-bottom: 12px;
+  }
+  .header p {
+    font-size: 16px;
+    color: #666;
+    line-height: 1.6;
+  }
+  .header .badges {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .badge-blue { background: #E8F1FC; color: #4A90D9; }
+  .badge-green { background: rgba(46,125,50,0.1); color: #2e7d32; }
+  .badge-orange { background: rgba(230,81,0,0.1); color: #e65100; }
+
+  /* 手机模拟器 */
+  .phones-row {
+    display: flex;
+    gap: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+
+  .phone {
+    width: 375px;
+    background: #fff;
+    border-radius: 32px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+    overflow: hidden;
+    position: relative;
+    border: 8px solid #1a1a2e;
+  }
+
+  .phone-statusbar {
+    height: 44px;
+    background: #4A90D9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .phone-content {
+    height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #f5f6f8;
+    position: relative;
+  }
+  .phone-content::-webkit-scrollbar { width: 4px; }
+  .phone-content::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+
+  .phone-tabbar {
+    display: flex;
+    background: #fff;
+    border-top: 1px solid #ececf0;
+    padding: 8px 0 12px;
+  }
+  .phone-tab {
+    flex: 1;
+    text-align: center;
+    font-size: 10px;
+    color: #999;
+  }
+  .phone-tab.active { color: #4A90D9; font-weight: 600; }
+  .phone-tab .tab-icon {
+    display: block;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    margin: 0 auto 4px;
+    background: #ddd;
+  }
+  .phone-tab.active .tab-icon { background: #4A90D9; }
+
+  .phone-label {
+    text-align: center;
+    margin-top: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  /* 通用样式 */
+  .pg { padding: 16px; }
+
+  /* 首页 */
+  .home-hero {
+    background: linear-gradient(135deg, #4A90D9 0%, #357ABD 50%, #2196F3 100%);
+    padding: 20px 16px 24px;
+    color: #fff;
+  }
+  .home-city-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .home-city {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.2);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .home-fav {
+    width: 28px; height: 28px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    font-size: 16px;
+  }
+  .home-weekend {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    font-size: 12px;
+  }
+  .home-weekend .w-label {
+    background: rgba(255,255,255,0.15);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .home-slogan {
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+  .home-slogan-sub {
+    font-size: 12px;
+    opacity: 0.8;
+  }
+  .home-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+  }
+  .home-btn {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .home-btn-primary { background: #fff; color: #4A90D9; }
+  .home-btn-outline { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.4); }
+
+  .card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ov-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .ov-item {
+    width: calc(33.33% - 6px);
+    background: #f5f6f8;
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  .ov-val {
+    font-size: 22px;
+    font-weight: 700;
+    color: #4A90D9;
+  }
+  .ov-lbl {
+    font-size: 11px;
+    color: #888;
+  }
+  .ov-weather {
+    background: #E8F1FC;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: #4A90D9;
+  }
+  .hl-list { display: flex; flex-direction: column; gap: 8px; }
+  .hl-item {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: 13px;
+    color: #4a4a68;
+  }
+  .hl-dot { color: #4A90D9; font-size: 8px; margin-top: 5px; }
+  .quick-nav {
+    display: flex;
+    justify-content: space-around;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 0;
+    margin: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .qn-item { text-align: center; }
+  .qn-icon { font-size: 24px; }
+  .qn-lbl { font-size: 11px; color: #4a4a68; margin-top: 4px; }
+
+  /* 发现页 */
+  .disc-city-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+  }
+  .disc-city {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .disc-regen {
+    background: #E8F1FC;
+    color: #4A90D9;
+    padding: 7px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .disc-result {
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px;
+    margin: 0 16px 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .disc-result-badge {
+    display: inline-block;
+    background: rgba(46,125,50,0.1);
+    color: #2e7d32;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .disc-result-title { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+  .disc-stats {
+    display: flex;
+    justify-content: space-around;
+    background: #f5f6f8;
+    border-radius: 10px;
+    padding: 12px 0;
+    margin-bottom: 12px;
+  }
+  .disc-stat { text-align: center; }
+  .disc-stat-val { font-size: 20px; font-weight: 700; color: #4A90D9; }
+  .disc-stat-lbl { font-size: 11px; color: #888; }
+
+  .wf-step {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .wf-step:last-child { border-bottom: none; }
+  .wf-circle {
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    background: #2e7d32;
+    color: #fff;
+  }
+  .wf-name { font-size: 13px; font-weight: 600; }
+  .wf-detail { font-size: 11px; color: #888; }
+
+  /* 地图页 */
+  .map-top {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .map-city-bar {
+    background: #E8F1FC;
+    color: #4A90D9;
+    padding: 7px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .map-search {
+    flex: 1;
+    background: #f5f6f8;
+    border-radius: 20px;
+    padding: 7px 12px;
+    font-size: 12px;
+    color: #888;
+  }
+  .map-pills {
+    display: flex;
+    gap: 6px;
+    padding: 8px 16px;
+    background: #fff;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .map-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    border-radius: 16px;
+    font-size: 11px;
+    background: #f5f6f8;
+    border: 1px solid transparent;
+  }
+  .map-pill.active { background: #fff; border-color: #d32f2f; }
+  .map-pill-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .map-area {
+    height: 280px;
+    background: linear-gradient(180deg, #e8f5e9 0%, #c8e6c9 50%, #a5d6a7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .map-marker {
+    position: absolute;
+    width: 24px; height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    clip-path: path('M12 0C5.4 0 0 5.4 0 12c0 8 12 18 12 18s12-10 12-18C24 5.4 18.6 0 12 0z');
+  }
+  .map-count {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: rgba(255,255,255,0.9);
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 11px;
+    color: #4a4a68;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .map-place-list {
+    padding: 12px 16px;
+  }
+  .map-place {
+    display: flex;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .map-place-marker {
+    width: 24px; height: 24px;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .map-place-marker span { transform: rotate(45deg); }
+  .map-place-name { font-size: 13px; font-weight: 600; }
+  .map-place-addr { font-size: 11px; color: #888; }
+
+  /* 个人中心 */
+  .pf-header {
+    background: linear-gradient(135deg, #4A90D9 0%, #2196F3 100%);
+    padding: 30px 16px 40px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .pf-avatar {
+    width: 60px; height: 60px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    border: 2px solid rgba(255,255,255,0.3);
+  }
+  .pf-name { font-size: 18px; font-weight: 700; }
+  .pf-desc { font-size: 12px; opacity: 0.8; }
+  .pf-stats {
+    display: flex;
+    justify-content: space-around;
+    margin: -20px 16px 0;
+    background: #fff;
+    border-radius: 16px;
+    padding: 16px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    position: relative;
+    z-index: 1;
+  }
+  .pf-stat { text-align: center; }
+  .pf-stat-val { font-size: 20px; font-weight: 700; color: #4A90D9; }
+  .pf-stat-lbl { font-size: 11px; color: #888; }
+  .pf-menu {
+    background: #fff;
+    border-radius: 16px;
+    margin: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  .pf-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .pf-menu-item:last-child { border-bottom: none; }
+  .pf-menu-icon { font-size: 18px; width: 24px; text-align: center; }
+  .pf-menu-name { font-size: 14px; font-weight: 500; }
+  .pf-menu-desc { font-size: 11px; color: #888; }
+  .pf-menu-arrow { margin-left: auto; color: #ccc; font-size: 14px; }
+
+  /* 功能特性区 */
+  .features-section {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .features-section h2 {
+    font-size: 24px;
+    margin-bottom: 24px;
+    text-align: center;
+  }
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+  }
+  .feature-box {
+    background: #f8f9fa;
+    border-radius: 16px;
+    padding: 24px;
+    transition: transform 0.2s;
+  }
+  .feature-box:hover { transform: translateY(-4px); box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+  .feature-box .fb-icon { font-size: 32px; margin-bottom: 12px; }
+  .feature-box .fb-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+  .feature-box .fb-desc { font-size: 13px; color: #666; line-height: 1.6; }
+
+  /* 11类配色展示 */
+  .colors-section {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .colors-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 16px;
+  }
+  .color-box {
+    text-align: center;
+    padding: 20px 12px;
+    border-radius: 16px;
+    color: #fff;
+    transition: transform 0.2s;
+  }
+  .color-box:hover { transform: scale(1.05); }
+  .color-box .cb-letter { font-size: 24px; font-weight: 700; }
+  .color-box .cb-name { font-size: 13px; margin-top: 4px; }
+  .color-box .cb-hex { font-size: 10px; opacity: 0.7; margin-top: 4px; }
+
+  /* 项目结构 */
+  .structure-section {
+    background: #1a1a2e;
+    border-radius: 20px;
+    padding: 40px;
+    margin-bottom: 32px;
+    color: #e0e0e0;
+  }
+  .structure-section h2 { color: #fff; margin-bottom: 24px; }
+  .structure-section pre {
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+  .structure-section .dir { color: #4A90D9; font-weight: bold; }
+  .structure-section .file { color: #81c784; }
+  .structure-section .comment { color: #666; font-style: italic; }
+
+  /* 说明区 */
+  .info-section {
+    background: #fff;
+    border-radius: 20px;
+    padding: 40px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .info-section h2 { margin-bottom: 20px; }
+  .info-list { list-style: none; }
+  .info-list li {
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #4a4a68;
+    display: flex;
+    gap: 8px;
+  }
+  .info-list li::before { content: '▸'; color: #4A90D9; font-weight: bold; }
+
+  @media (max-width: 768px) {
+    .phones-row { gap: 16px; }
+    .phone { width: 320px; }
+  }
+</style>
+</head>
+<body>
+<div class="preview-container">
+
+  <!-- 标题 -->
+  <div class="header">
+    <h1>🏙️ 周末城市游</h1>
+    <p>基于 GitHub 开源项目 weekend-city-trip 分析报告开发的微信小程序</p>
+    <div class="badges">
+      <span class="badge badge-blue">📱 8个页面</span>
+      <span class="badge badge-green">✅ 11个调查方向</span>
+      <span class="badge badge-orange">🗺️ 11类地图标记</span>
+      <span class="badge badge-blue">📋 10节标准报告</span>
+      <span class="badge badge-green">🛤️ 3条周末路线</span>
+      <span class="badge badge-orange">🔍 质量保障闭环</span>
+    </div>
+  </div>
+
+  <!-- 手机预览 -->
+  <div class="phones-row">
+
+    <!-- 首页 -->
+    <div>
+      <div class="phone">
+        <div class="phone-statusbar">周末城市游</div>
+        <div class="phone-content">
+          <div class="home-hero">
+            <div class="home-city-bar">
+              <div class="home-city">📍 广州 ▸</div>
+              <div class="home-fav">★</div>
+            </div>
+            <div class="home-weekend">
+              <span class="w-label">本周末</span>
+              <span>8月1日(六)</span>
+              <span>~</span>
+              <span>8月2日(日)</span>
+            </div>
+            <div class="home-slogan">一句话，生成城市周末深度攻略</div>
+            <div class="home-slogan-sub">11个方向调研 · 10节标准报告 · 3条周末路线</div>
+            <div class="home-btns">
+              <div class="home-btn home-btn-primary">🔍 开始调研</div>
+              <div class="home-btn home-btn-outline">📋 查看攻略</div>
+            </div>
+          </div>
+          <div class="pg" style="padding-top:12px;">
+            <div class="card">
+              <div class="card-title">📊 广州周末一图速览 ›</div>
+              <div class="ov-grid">
+                <div class="ov-item"><div class="ov-val">5</div><div class="ov-lbl">演出</div></div>
+                <div class="ov-item"><div class="ov-val">4</div><div class="ov-lbl">市集</div></div>
+                <div class="ov-item"><div class="ov-val">8</div><div class="ov-lbl">展览</div></div>
+                <div class="ov-item"><div class="ov-val">5</div><div class="ov-lbl">美食街</div></div>
+                <div class="ov-item"><div class="ov-val">3</div><div class="ov-lbl">CityWalk</div></div>
+                <div class="ov-item"><div class="ov-val">4</div><div class="ov-lbl">喜茶</div></div>
+              </div>
+              <div class="ov-weather">8月1日-2日 多云转晴 26-34°C</div>
+            </div>
+            <div class="card">
+              <div class="card-title">✨ 本周末亮点</div>
+              <div class="hl-list">
+                <div class="hl-item"><span class="hl-dot">●</span>张韶涵「寓言」世界巡回演唱会广州站</div>
+                <div class="hl-item"><span class="hl-dot">●</span>广州大剧院话剧《雷雨》</div>
+                <div class="hl-item"><span class="hl-dot">●</span>天河城创意市集周末限定</div>
+                <div class="hl-item"><span class="hl-dot">●</span>广东省博物馆敦煌特展</div>
+              </div>
+            </div>
+            <div class="quick-nav">
+              <div class="qn-item"><div class="qn-icon">🗺️</div><div class="qn-lbl">地图标记</div></div>
+              <div class="qn-item"><div class="qn-icon">🛤️</div><div class="qn-lbl">周末路线</div></div>
+              <div class="qn-item"><div class="qn-icon">🎤</div><div class="qn-lbl">演出活动</div></div>
+              <div class="qn-item"><div class="qn-icon">🍜</div><div class="qn-lbl">美食推荐</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-tabbar">
+          <div class="phone-tab active"><div class="tab-icon"></div>首页</div>
+          <div class="phone-tab"><div class="tab-icon"></div>发现</div>
+          <div class="phone-tab"><div class="tab-icon"></div>地图</div>
+          <div class="phone-tab"><div class="tab-icon"></div>我的</div>
+        </div>
+      </div>
+      <div class="phone-label">首页 - 城市概览与亮点</div>
+    </div>
+
+    <!-- 发现页 -->
+    <div>
+      <div class="phone">
+        <div class="phone-statusbar">发现</div>
+        <div class="phone-content">
+          <div class="disc-city-bar">
+            <div class="disc-city">📍 广州 ▸</div>
+            <div class="disc-regen">🔄 重新生成</div>
+          </div>
+          <div class="disc-result">
+            <div class="disc-result-badge">✓ 已完成</div>
+            <div class="disc-result-title">广州周末攻略</div>
+            <div class="disc-stats">
+              <div class="disc-stat"><div class="disc-stat-val">13</div><div class="disc-stat-lbl">API调用</div></div>
+              <div class="disc-stat"><div class="disc-stat-val">27.5KB</div><div class="disc-stat-lbl">报告大小</div></div>
+              <div class="disc-stat"><div class="disc-stat-val">92</div><div class="disc-stat-lbl">质量评分</div></div>
+            </div>
+            <div style="display:flex;gap:8px;">
+              <div class="home-btn home-btn-primary" style="flex:1;font-size:13px;">📋 查看完整攻略</div>
+              <div style="width:44px;height:44px;background:#f5f6f8;border-radius:50%;display:flex;align-items:center;justify-content:center;">🗺️</div>
+              <div style="width:44px;height:44px;background:#f5f6f8;border-radius:50%;display:flex;align-items:center;justify-content:center;">🛤️</div>
+            </div>
+          </div>
+          <div class="card" style="margin:0 16px 12px;">
+            <div class="card-title">⚙️ 10步工作流详情</div>
+            <div class="wf-step"><div class="wf-circle">✓</div><div><div class="wf-name">Step 1: 时间锁定</div><div class="wf-detail">本周末: 8月1日(六)-8月2日(日)</div></div></div>
+            <div class="wf-step"><div class="wf-circle">✓</div><div><div class="wf-name">Step 4: 写query</div><div class="wf-detail">11个方向query body已就绪</div></div></div>
+            <div class="wf-step"><div class="wf-circle">✓</div><div><div class="wf-name">Step 5: 并行搜索</div><div class="wf-detail">11个query拆5+4+2三批次并行</div></div></div>
+            <div class="wf-step"><div class="wf-circle">✓</div><div><div class="wf-name">Step 7: 整合报告</div><div class="wf-detail">按10节标准结构输出初稿</div></div></div>
+            <div class="wf-step"><div class="wf-circle">✓</div><div><div class="wf-name">Step 8: 质量检查</div><div class="wf-detail">5维度检查+1轮补查询(2次)</div></div></div>
+          </div>
+          <div class="card" style="margin:0 16px 12px;">
+            <div class="card-title">🔍 质量检查报告</div>
+            <div style="background:#f5f6f8;border-radius:8px;height:28px;position:relative;margin-bottom:12px;">
+              <div style="position:absolute;left:0;top:0;bottom:0;width:92%;background:#2e7d32;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;">92分</div>
+            </div>
+            <div class="wf-step"><div style="font-size:14px;">✅</div><div><div class="wf-name">完整性 <span style="color:#4A90D9;float:right;">100分</span></div><div class="wf-detail">11个调查方向全部覆盖</div></div></div>
+            <div class="wf-step"><div style="font-size:14px;">⚠️</div><div><div class="wf-name">信源多样性 <span style="color:#f9a825;float:right;">85分</span></div><div class="wf-detail">部分关键信息仅1个信源</div></div></div>
+          </div>
+        </div>
+        <div class="phone-tabbar">
+          <div class="phone-tab"><div class="tab-icon"></div>首页</div>
+          <div class="phone-tab active"><div class="tab-icon"></div>发现</div>
+          <div class="phone-tab"><div class="tab-icon"></div>地图</div>
+          <div class="phone-tab"><div class="tab-icon"></div>我的</div>
+        </div>
+      </div>
+      <div class="phone-label">发现 - 10步工作流与质量检查</div>
+    </div>
+
+    <!-- 地图页 -->
+    <div>
+      <div class="phone">
+        <div class="phone-statusbar">地图标记</div>
+        <div class="phone-content">
+          <div class="map-top">
+            <div class="map-city-bar">📍 广州</div>
+            <div class="map-search">🔍 搜索地点/地址</div>
+          </div>
+          <div class="map-pills">
+            <div class="map-pill active"><div class="map-pill-dot" style="background:#d32f2f;"></div>演唱会</div>
+            <div class="map-pill active"><div class="map-pill-dot" style="background:#7b1fa2;"></div>球赛</div>
+            <div class="map-pill active"><div class="map-pill-dot" style="background:#f9a825;"></div>集市</div>
+            <div class="map-pill active"><div class="map-pill-dot" style="background:#1565c0;"></div>博物馆</div>
+            <div class="map-pill active"><div class="map-pill-dot" style="background:#e65100;"></div>5A景区</div>
+            <div class="map-pill active"><div class="map-pill-dot" style="background:#ec407a;"></div>喜茶</div>
+          </div>
+          <div class="map-area">
+            <div class="map-marker" style="background:#d32f2f;left:20%;top:30%;">C</div>
+            <div class="map-marker" style="background:#1565c0;left:45%;top:25%;">U</div>
+            <div class="map-marker" style="background:#e65100;left:60%;top:50%;">5</div>
+            <div class="map-marker" style="background:#ec407a;left:35%;top:60%;">H</div>
+            <div class="map-marker" style="background:#ad1457;left:70%;top:35%;">F</div>
+            <div class="map-marker" style="background:#00838f;left:25%;top:55%;">W</div>
+            <div class="map-marker" style="background:#f9a825;left:55%;top:70%;">M</div>
+            <div class="map-marker" style="background:#546e7a;left:80%;top:45%;">D</div>
+            <div class="map-count">39 个地点</div>
+          </div>
+          <div class="map-place-list">
+            <div class="map-place">
+              <div class="map-place-marker" style="background:#d32f2f;"><span>C</span></div>
+              <div><div class="map-place-name">广州体育馆</div><div class="map-place-addr">📍 白云区白云大道南783号</div></div>
+            </div>
+            <div class="map-place">
+              <div class="map-place-marker" style="background:#1565c0;"><span>U</span></div>
+              <div><div class="map-place-name">广东省博物馆</div><div class="map-place-addr">📍 天河区珠江新城</div></div>
+            </div>
+            <div class="map-place">
+              <div class="map-place-marker" style="background:#e65100;"><span>5</span></div>
+              <div><div class="map-place-name">白云山</div><div class="map-place-addr">📍 白云区广园中路</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-tabbar">
+          <div class="phone-tab"><div class="tab-icon"></div>首页</div>
+          <div class="phone-tab"><div class="tab-icon"></div>发现</div>
+          <div class="phone-tab active"><div class="tab-icon"></div>地图</div>
+          <div class="phone-tab"><div class="tab-icon"></div>我的</div>
+        </div>
+      </div>
+      <div class="phone-label">地图 - 11类标记与筛选</div>
+    </div>
+
+    <!-- 个人中心 -->
+    <div>
+      <div class="phone">
+        <div class="phone-statusbar">我的</div>
+        <div class="phone-content">
+          <div class="pf-header">
+            <div class="pf-avatar">🧳</div>
+            <div>
+              <div class="pf-name">周末旅行家</div>
+              <div class="pf-desc">探索每一个城市的周末精彩</div>
+            </div>
+          </div>
+          <div class="pf-stats">
+            <div class="pf-stat"><div class="pf-stat-val">0</div><div class="pf-stat-lbl">已保存报告</div></div>
+            <div class="pf-stat"><div class="pf-stat-val">2</div><div class="pf-stat-lbl">收藏城市</div></div>
+            <div class="pf-stat"><div class="pf-stat-val">63</div><div class="pf-stat-lbl">地图标记</div></div>
+          </div>
+          <div style="padding:16px;">
+            <div style="font-size:14px;font-weight:700;margin-bottom:12px;">⭐ 收藏城市</div>
+            <div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;">
+              <div style="min-width:130px;background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                <div style="font-size:18px;font-weight:700;">广州</div>
+                <div style="font-size:11px;color:#888;">花城羊城</div>
+              </div>
+              <div style="min-width:130px;background:#fff;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                <div style="font-size:18px;font-weight:700;">成都</div>
+                <div style="font-size:11px;color:#888;">天府之国</div>
+              </div>
+            </div>
+          </div>
+          <div class="pf-menu">
+            <div class="pf-menu-item">
+              <div class="pf-menu-icon">📋</div>
+              <div><div class="pf-menu-name">我的报告</div><div class="pf-menu-desc">0 份已保存</div></div>
+              <div class="pf-menu-arrow">›</div>
+            </div>
+            <div class="pf-menu-item">
+              <div class="pf-menu-icon">⭐</div>
+              <div><div class="pf-menu-name">收藏城市</div><div class="pf-menu-desc">2 个城市</div></div>
+              <div class="pf-menu-arrow">›</div>
+            </div>
+            <div class="pf-menu-item">
+              <div class="pf-menu-icon">🗺️</div>
+              <div><div class="pf-menu-name">浏览地图</div><div class="pf-menu-desc">查看城市标记</div></div>
+              <div class="pf-menu-arrow">›</div>
+            </div>
+            <div class="pf-menu-item">
+              <div class="pf-menu-icon">ℹ️</div>
+              <div><div class="pf-menu-name">关于</div><div class="pf-menu-desc">版本与说明</div></div>
+              <div class="pf-menu-arrow">›</div>
+            </div>
+          </div>
+        </div>
+        <div class="phone-tabbar">
+          <div class="phone-tab"><div class="tab-icon"></div>首页</div>
+          <div class="phone-tab"><div class="tab-icon"></div>发现</div>
+          <div class="phone-tab"><div class="tab-icon"></div>地图</div>
+          <div class="phone-tab active"><div class="tab-icon"></div>我的</div>
+        </div>
+      </div>
+      <div class="phone-label">我的 - 收藏与设置</div>
+    </div>
+
+  </div>
+
+  <!-- 功能特性 -->
+  <div class="features-section">
+    <h2>🎯 已实现的核心功能</h2>
+    <div class="features-grid">
+      <div class="feature-box">
+        <div class="fb-icon">🏙️</div>
+        <div class="fb-title">城市选择</div>
+        <div class="fb-desc">支持10个热门城市，搜索+热门推荐，城市切换后自动加载报告数据</div>
+      </div>
+      <div class="feature-box">
+        <div class="fb-icon">⚙️</div>
+        <div class="fb-title">10步工作流可视化</div>
+        <div class="fb-desc">完整展示10步标准化调研流程，含步骤状态、耗时、详情，支持模拟生成动画</div>
+      </div>
+      <div class="feature-box">
+        <div class="fb-icon">📋</div>
+        <div class="fb-title">10节标准报告</div>
+        <div class="fb-desc">一图速览→活动清单→优惠门票→喜茶→美食街→CityWalk→地铁→路线→时效说明→API统计</div>
+      </div>
+      <div class="feature-box">
+        <div class="fb-icon">🗺️</div>
+        <div class="fb-title">11类地图标记</div>
+        <div class="fb-desc">分类配色系统（演唱会红/球赛紫/集市黄...），支持筛选、搜索、卡片联动</div>
+      </div>
+      <div class="feature-box">
+        <div class="fb-icon">🛤️</div>
+        <div class="fb-title">3条周末路线</div>
+        <div class="fb-desc">文艺青年/情侣浪漫/亲子家庭，每条路线含完整时间表与地点导航</div>
+      </div>
+      <div class="feature-box">
+        <div class="fb-icon">🔍</div>
+        <div class="fb-title">质量保障闭环</div>
+        <div class="fb-desc">5维度质量检查（完整性/准确性/丰富度/可执行性/信源多样性）+ 补查询迭代记录</div>
+      </div>
+      <div class="feature-box">
+        <div class="fb-icon">📊</div>
+        <div class="fb-title">API调用统计</div>
+        <div class="fb-desc">透明展示每批次搜索的query、并行数、耗时、返回结果数</div>
+      </div>
+      <div class="feature-box">
+        <div class="fb-icon">📚</div>
+        <div class="fb-title">11方向分类浏览</div>
+        <div class="fb-desc">每个调查方向独立详情页，含时效性标注、Query关键词、信源标注</div>
+      </div>
+      <div class="feature-box">
+        <div class="fb-icon">⭐</div>
+        <div class="fb-title">收藏与本地存储</div>
+        <div class="fb-desc">城市收藏、报告保存、缓存管理，支持wx.storage本地持久化</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 11类配色系统 -->
+  <div class="colors-section">
+    <h2>🎨 11类调查方向配色系统</h2>
+    <div class="colors-grid">
+      <div class="color-box" style="background:#d32f2f;"><div class="cb-letter">C</div><div class="cb-name">演唱会</div><div class="cb-hex">#d32f2f</div></div>
+      <div class="color-box" style="background:#7b1fa2;"><div class="cb-letter">S</div><div class="cb-name">球赛</div><div class="cb-hex">#7b1fa2</div></div>
+      <div class="color-box" style="background:#f9a825;"><div class="cb-letter">M</div><div class="cb-name">集市</div><div class="cb-hex">#f9a825</div></div>
+      <div class="color-box" style="background:#1565c0;"><div class="cb-letter">U</div><div class="cb-name">博物馆</div><div class="cb-hex">#1565c0</div></div>
+      <div class="color-box" style="background:#e65100;"><div class="cb-letter">5</div><div class="cb-name">5A景区</div><div class="cb-hex">#e65100</div></div>
+      <div class="color-box" style="background:#ec407a;"><div class="cb-letter">H</div><div class="cb-name">喜茶</div><div class="cb-hex">#ec407a</div></div>
+      <div class="color-box" style="background:#ad1457;"><div class="fb-letter" style="font-size:24px;font-weight:700;">F</div><div class="cb-name">美食街</div><div class="cb-hex">#ad1457</div></div>
+      <div class="color-box" style="background:#00838f;"><div class="cb-letter">W</div><div class="cb-name">CityWalk</div><div class="cb-hex">#00838f</div></div>
+      <div class="color-box" style="background:#4527a0;"><div class="cb-letter">L</div><div class="cb-name">购物中心</div><div class="cb-hex">#4527a0</div></div>
+      <div class="color-box" style="background:#546e7a;"><div class="cb-letter">D</div><div class="cb-name">地铁站</div><div class="cb-hex">#546e7a</div></div>
+      <div class="color-box" style="background:#2e7d32;"><div class="cb-letter">T</div><div class="cb-name">优惠门票</div><div class="cb-hex">#2e7d32</div></div>
+    </div>
+  </div>
+
+  <!-- 项目结构 -->
+  <div class="structure-section">
+    <h2>📁 项目文件结构</h2>
+    <pre>
+<span class="dir">miniprogram/</span>
+├── <span class="file">app.js</span>                          <span class="comment"># 应用入口，全局数据与存储管理</span>
+├── <span class="file">app.json</span>                        <span class="comment"># 全局配置，tabBar 4页导航</span>
+├── <span class="file">app.wxss</span>                       <span class="comment"># 全局样式，CSS变量系统（含11类配色）</span>
+├── <span class="file">project.config.json</span>            <span class="comment"># 项目配置</span>
+├── <span class="file">sitemap.json</span>                   <span class="comment"># 小程序索引配置</span>
+├── <span class="dir">assets/tab/</span>                     <span class="comment"># tabBar图标（8个PNG）</span>
+├── <span class="dir">utils/</span>
+│   ├── <span class="file">categories.js</span>              <span class="comment"># 11个调查方向配置（名称/配色/图标/Query）</span>
+│   ├── <span class="file">mockData.js</span>                <span class="comment"># Mock数据（3城市完整报告+地图标记点）</span>
+│   └── <span class="file">util.js</span>                    <span class="comment"># 辅助函数（日期/Toast/距离计算等）</span>
+├── <span class="dir">pages/</span>
+│   ├── <span class="dir">home/</span>                       <span class="comment"># 首页：城市选择+概览+亮点+快捷入口</span>
+│   ├── <span class="dir">discover/</span>                   <span class="comment"># 发现：10步工作流+质量检查+API统计</span>
+│   ├── <span class="dir">map/</span>                        <span class="comment"># 地图：11类标记+筛选+搜索+联动</span>
+│   ├── <span class="dir">profile/</span>                    <span class="comment"># 我的：收藏+报告+设置+关于</span>
+│   ├── <span class="dir">city-select/</span>               <span class="comment"># 城市选择：搜索+热门+全部</span>
+│   ├── <span class="dir">report/</span>                     <span class="comment"># 报告：10节结构展开/折叠展示</span>
+│   ├── <span class="dir">category/</span>                   <span class="comment"># 分类：11方向独立详情页</span>
+│   └── <span class="dir">route/</span>                      <span class="comment"># 路线：A/B/C三线+时间线</span>
+<span class="comment"># 共 8个页面 × 4文件 + 3个工具 + 配置 = 45个文件</span>
+    </pre>
+  </div>
+
+  <!-- 使用说明 -->
+  <div class="info-section">
+    <h2>📖 如何在微信开发者工具中运行</h2>
+    <ul class="info-list">
+      <li>下载并安装 <strong>微信开发者工具</strong>（稳定版）</li>
+      <li>打开微信开发者工具，选择「导入项目」</li>
+      <li>项目目录选择：<code>D:\dwl\work\todo\city_trip</code>（包含 project.config.json 的目录）</li>
+      <li>AppID 可选择「测试号」或填入自己的小程序 AppID</li>
+      <li>点击确定后，开发者工具会自动编译并预览</li>
+      <li>支持「真机调试」扫码在手机上查看效果</li>
+    </ul>
+  </div>
+
+  <div class="info-section">
+    <h2>💡 数据说明</h2>
+    <ul class="info-list">
+      <li>当前使用 Mock 数据，已预置 <strong>广州/深圳/成都</strong> 3个城市的完整报告数据</li>
+      <li>每个城市包含：10节报告 + 3条周末路线 + 11类地图标记点 + 质量检查 + API统计</li>
+      <li>广州有 39 个地图标记点，深圳 11 个，成都 13 个</li>
+      <li>数据来源标注真实（大麦网/小红书/大众点评等），但具体信息为演示数据</li>
+      <li>接入真实后端 API 后，替换 <code>utils/mockData.js</code> 即可切换为实时数据</li>
+    </ul>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>周末城市游 · 主题图片设计系统</title>
+  <style>
+    :root {
+      --primary: #357ABD;
+      --primary-dark: #1e3a5f;
+      --accent: #FF7043;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1f2937;
+      --text-2: #4b5563;
+      --text-3: #9ca3af;
+      --border: #e5e7eb;
+      --radius: 16px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.06);
+      --shadow-lg: 0 12px 40px rgba(0,0,0,0.12);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+    header {
+      text-align: center;
+      padding: 60px 20px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #357ABD 100%);
+      color: #fff;
+      border-radius: var(--radius);
+      margin-bottom: 48px;
+      box-shadow: var(--shadow-lg);
+    }
+    header h1 {
+      font-size: 36px;
+      font-weight: 800;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    header p {
+      font-size: 17px;
+      opacity: 0.9;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .section {
+      margin-bottom: 56px;
+    }
+    .section-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-desc {
+      color: var(--text-2);
+      margin-bottom: 24px;
+      font-size: 15px;
+    }
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 28px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .logo-showcase {
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .logo-img {
+      width: 180px;
+      height: 180px;
+      border-radius: 36px;
+      box-shadow: var(--shadow-lg);
+      object-fit: cover;
+    }
+    .logo-info {
+      flex: 1;
+      min-width: 280px;
+    }
+    .logo-info h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+    .logo-info ul {
+      list-style: none;
+      color: var(--text-2);
+      font-size: 15px;
+    }
+    .logo-info li {
+      padding: 6px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+    .logo-info li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .image-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .image-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    .image-card img {
+      width: 100%;
+      height: 220px;
+      object-fit: cover;
+      display: block;
+    }
+    .image-card.wide img {
+      height: 280px;
+    }
+    .image-card-body {
+      padding: 20px;
+    }
+    .image-card-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .image-card-desc {
+      font-size: 14px;
+      color: var(--text-2);
+    }
+    .image-card-meta {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: var(--text-2);
+    }
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+    }
+    .color-item {
+      background: var(--card);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+    .color-swatch {
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 24px;
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .color-info {
+      padding: 12px;
+      font-size: 13px;
+    }
+    .color-name {
+      font-weight: 600;
+      margin-bottom: 2px;
+    }
+    .color-hex {
+      color: var(--text-3);
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .usage-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+    .usage-item {
+      background: #f9fafb;
+      border-radius: 12px;
+      padding: 20px;
+      border-left: 4px solid var(--primary);
+    }
+    .usage-item h4 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .usage-item p {
+      font-size: 14px;
+      color: var(--text-2);
+    }
+    .integration-code {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 12px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 13px;
+      overflow-x: auto;
+      line-height: 1.8;
+    }
+    .integration-code .comment { color: #64748b; }
+    .integration-code .string { color: #a5f3fc; }
+    .integration-code .key { color: #93c5fd; }
+    footer {
+      text-align: center;
+      padding: 40px 0;
+      color: var(--text-3);
+      font-size: 14px;
+    }
+    @media (max-width: 640px) {
+      header h1 { font-size: 28px; }
+      .logo-showcase { flex-direction: column; text-align: center; }
+      .image-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>周末城市游 · 主题图片设计系统</h1>
+      <p>基于「11方向调研 · 10节标准报告 · 3条周末路线」的视觉识别体系，为微信小程序提供统一、温暖、可识别的品牌视觉语言。</p>
+    </header>
+
+    <!-- 品牌Logo -->
+    <section class="section">
+      <h2 class="section-title">🎯 品牌标识</h2>
+      <p class="section-desc">App 图标采用城市天际线剪影 + 定位标记的组合，传递「城市探索」与「周末出行」的核心价值。</p>
+      <div class="card">
+        <div class="logo-showcase">
+          <img class="logo-img" src="miniprogram/assets/images/logo.png" alt="周末城市游 Logo">
+          <div class="logo-info">
+            <h3>设计说明</h3>
+            <ul>
+              <li>城市天际线融合传统建筑与现代高楼，体现中国城市的古今交融</li>
+              <li>暖橙到紫红的日落渐变，营造周末傍晚的轻松氛围</li>
+              <li>白色定位标记突出「发现城市」的产品定位</li>
+              <li>圆角矩形符合 iOS/Android 应用图标规范</li>
+              <li>文件路径：<code>miniprogram/assets/images/logo.png</code></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 主题图片 -->
+    <section class="section">
+      <h2 class="section-title">🖼️ 核心主题图片</h2>
+      <p class="section-desc">5 张核心图片覆盖品牌、首页视觉与 3 条主题路线封面，采用统一的扁平插画风格。</p>
+      <div class="image-grid">
+        <div class="image-card wide">
+          <img src="miniprogram/assets/images/home-banner.png" alt="首页 Banner">
+          <div class="image-card-body">
+            <div class="image-card-title">首页 Banner</div>
+            <div class="image-card-desc">城市天际线日落景观，融合广州塔与传统建筑元素，作为首页 Hero 区域背景，搭配深色遮罩保证文字可读性。</div>
+            <div class="image-card-meta">
+              <span class="tag">首页背景</span>
+              <span class="tag">1536×1024</span>
+            </div>
+          </div>
+        </div>
+        <div class="image-card">
+          <img src="miniprogram/assets/images/route-art.png" alt="文艺青年线">
+          <div class="image-card-body">
+            <div class="image-card-title">路线 A · 文艺青年线</div>
+            <div class="image-card-desc">紫色调文化街区，博物馆、独立书店与街头艺术，对应「博物馆+CityWalk+市集」路线。</div>
+            <div class="image-card-meta">
+              <span class="tag">紫色 #7b1fa2</span>
+              <span class="tag">1024×1024</span>
+            </div>
+          </div>
+        </div>
+        <div class="image-card">
+          <img src="miniprogram/assets/images/route-romance.png" alt="情侣浪漫线">
+          <div class="image-card-body">
+            <div class="image-card-title">路线 B · 情侣浪漫线</div>
+            <div class="image-card-desc">粉色调日落河畔，情侣牵手漫步，对应「城市地标+夜景+浪漫晚餐」路线。</div>
+            <div class="image-card-meta">
+              <span class="tag">粉色 #ec407a</span>
+              <span class="tag">1024×1024</span>
+            </div>
+          </div>
+        </div>
+        <div class="image-card">
+          <img src="miniprogram/assets/images/route-family.png" alt="亲子家庭线">
+          <div class="image-card-body">
+            <div class="image-card-title">路线 C · 亲子家庭线</div>
+            <div class="image-card-desc">绿色调城市公园，家庭游玩场景，对应「动物园/乐园+博物馆+公园」路线。</div>
+            <div class="image-card-meta">
+              <span class="tag">绿色 #2e7d32</span>
+              <span class="tag">1024×1024</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 配色系统 -->
+    <section class="section">
+      <h2 class="section-title">🎨 11 类分类配色系统</h2>
+      <p class="section-desc">与小程序中 11 个调查方向一一对应，用于地图标记、分类图标、卡片标签等场景。</p>
+      <div class="card">
+        <div class="color-grid">
+          <div class="color-item"><div class="color-swatch" style="background:#d32f2f">C</div><div class="color-info"><div class="color-name">演唱会/音乐会</div><div class="color-hex">#d32f2f</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#7b1fa2">S</div><div class="color-info"><div class="color-name">体育赛事</div><div class="color-hex">#7b1fa2</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#f9a825">M</div><div class="color-info"><div class="color-name">集市/夜市</div><div class="color-hex">#f9a825</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#1565c0">U</div><div class="color-info"><div class="color-name">博物馆/美术馆</div><div class="color-hex">#1565c0</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#e65100">5</div><div class="color-info"><div class="color-name">5A/4A景区</div><div class="color-hex">#e65100</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#ec407a">H</div><div class="color-info"><div class="color-name">喜茶旗舰+商场</div><div class="color-hex">#ec407a</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#ad1457">F</div><div class="color-info"><div class="color-name">美食街/老字号</div><div class="color-hex">#ad1457</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#00838f">W</div><div class="color-info"><div class="color-name">City Walk</div><div class="color-hex">#00838f</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#2e7d32">T</div><div class="color-info"><div class="color-name">优惠门票/特惠</div><div class="color-hex">#2e7d32</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#4527a0">L</div><div class="color-info"><div class="color-name">商场/购物中心</div><div class="color-hex">#4527a0</div></div></div>
+          <div class="color-item"><div class="color-swatch" style="background:#546e7a">D</div><div class="color-info"><div class="color-name">地铁线网+站点</div><div class="color-hex">#546e7a</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 应用场景 -->
+    <section class="section">
+      <h2 class="section-title">📱 应用场景</h2>
+      <p class="section-desc">主题图片已集成到小程序各页面，明确每张图片的使用位置与尺寸建议。</p>
+      <div class="card">
+        <div class="usage-list">
+          <div class="usage-item">
+            <h4>首页 Hero 背景</h4>
+            <p>使用 home-banner.png，通过深色渐变遮罩叠加，确保 Slogan 与按钮文字清晰可读。</p>
+          </div>
+          <div class="usage-item">
+            <h4>周末路线封面</h4>
+            <p>路线页顶部展示 coverImage，切换 A/B/C 路线时图片与颜色同步变化。</p>
+          </div>
+          <div class="usage-item">
+            <h4>分享卡片</h4>
+            <p>可截取 Logo + 当前城市一图速览生成分享图，强化品牌识别。</p>
+          </div>
+          <div class="usage-item">
+            <h4>启动页/加载页</h4>
+            <p>Logo 可作为启动图标与加载动画中心元素，配合 Slogan 使用。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 集成代码 -->
+    <section class="section">
+      <h2 class="section-title">🔧 集成说明</h2>
+      <p class="section-desc">图片已存放于 <code>miniprogram/assets/images/</code>，并在 mockData.js 与页面样式中完成引用。</p>
+      <div class="card">
+        <pre class="integration-code"><span class="comment">// mockData.js 中每条路线新增 coverImage 字段</span>
+{
+  id: <span class="string">'A'</span>,
+  name: <span class="string">'文艺青年线'</span>,
+  color: <span class="string">'#7b1fa2'</span>,
+  <span class="key">coverImage</span>: <span class="string">'/assets/images/route-art.png'</span>,
+  desc: <span class="string">'博物馆+CityWalk+市集，文化深度体验'</span>
+}
+
+<span class="comment">&lt;!-- route.wxml 中展示路线封面 --&gt;</span>
+&lt;image wx:if=<span class="string">"{{activeRoute.coverImage}}"</span>
+       class=<span class="string">"route-cover"</span>
+       src=<span class="string">"{{activeRoute.coverImage}}"</span>
+       mode=<span class="string">"aspectFill"</span> /&gt;
+
+<span class="comment">/* home.wxss 中将 banner 设为 Hero 背景 */</span>
+.hero-bg {
+  background: linear-gradient(...), url(<span class="string">'/assets/images/home-banner.png'</span>) center/cover no-repeat;
+}</pre>
+      </div>
+    </section>
+
+    <footer>
+      <p>「周末城市游」主题图片设计系统 · 2026.07.30</p>
+    </footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,413 @@
+<!-- pages/report/report.wxml - v3.0 组件化 + 快速跳转 -->
+<view class="report-page" wx:if="{{report}}">
+  <!-- 报告头部 -->
+  <view class="report-header">
+    <view class="report-header-bg"></view>
+    <view class="report-header-content">
+
+      <!-- 分区1：城市 / 统计 -->
+      <view class="header-zone header-zone-id">
+        <text class="report-header-city">{{cityName}}周末攻略</text>
+        <text class="report-header-date">{{report.overview.weekend}} {{report.overview.weather}} {{report.overview.tempRange}}</text>
+
+        <view class="report-header-meta">
+          <text class="report-meta-item">🎤 {{report.overview.concertCount}}场演出</text>
+          <text class="report-meta-item">🎪 {{report.overview.marketCount}}个市集</text>
+          <text class="report-meta-item">🍜 {{report.overview.foodStreetCount}}条美食街</text>
+        </view>
+      </view>
+
+      <!-- 分区2：选择器 -->
+      <view class="header-zone header-zone-switch">
+        <view class="weekend-switcher">
+          <view class="weekend-chip {{weekendOffset === item.value ? 'active' : ''}}"
+                wx:for="{{weekendOptions}}" wx:key="value"
+                data-offset="{{item.value}}" bindtap="switchWeekend" hover-class="chip-hover">{{item.label}}</view>
+        </view>
+
+        <view class="pref-switcher">
+          <view class="pref-chip {{preference === item.value ? 'active' : ''}}"
+                wx:for="{{preferenceOptions}}" wx:key="value"
+                data-pref="{{item.value}}" bindtap="switchPreference" hover-class="chip-hover">{{item.label}}</view>
+        </view>
+      </view>
+
+      <!-- 分区3：状态徽标 -->
+      <view class="header-zone header-zone-status">
+        <view class="freshness-badge {{freshnessLabel.type}}" wx:if="{{freshnessLabel.text}}">
+          <text class="freshness-badge-icon">{{freshnessLabel.type === 'current' ? '✅' : freshnessLabel.type === 'next' ? '📅' : '⚠️'}}</text>
+          <text class="freshness-badge-text">{{freshnessLabel.text}}</text>
+        </view>
+        <text class="data-version-chip" wx:if="{{dataVersion}}">数据 v{{dataVersion}}</text>
+        <text class="data-baked-chip" wx:if="{{bakedAt}}">{{authSource === 'authoritative' ? '权威源烘焙' : (authSource === 'citymap' ? '博查版参考' : '打包数据')}} · {{bakedAt}}</text>
+        <text class="data-source-chip {{dataSourceLabel === '本地缓存(可能非最新)' ? 'stale' : ''}}" wx:if="{{dataSourceLabel}}">{{dataSourceLabel}}</text>
+
+        <view class="quality-badge" wx:if="{{qualityCheck}}" bindtap="toggleQuality" hover-class="hover-bg">
+          <text class="quality-badge-icon">🛡️</text>
+          <text class="quality-badge-text">攻略质量 {{qualityCheck.overallScore}}分</text>
+          <text class="quality-badge-arrow {{showQuality ? 'expanded' : ''}}">▾</text>
+        </view>
+
+        <view class="ai-badge" wx:if="{{aiGenerated}}" bindtap="showAiNotice" hover-class="hover-bg">
+          <text class="ai-badge-icon">🤖</text>
+          <text class="ai-badge-text">AI整理 · 出行前核实</text>
+        </view>
+
+        <!-- 质量分详情 -->
+        <view class="quality-panel" wx:if="{{showQuality && qualityCheck}}">
+          <view class="quality-dim-row" wx:for="{{qualityCheck.dimensions}}" wx:key="id">
+            <view class="quality-dim-left">
+              <text class="quality-dim-icon">{{item.icon}}</text>
+              <text class="quality-dim-name">{{item.name}}</text>
+              <text class="quality-dim-limited" wx:if="{{item._infoLimited}}">信息有限</text>
+            </view>
+            <view class="quality-dim-bar">
+              <view class="quality-dim-fill" style="width: {{item.score}}%; background: {{item.score >= 90 ? '#2e7d32' : item.score >= 80 ? '#f9a825' : '#d32f2f'}};"></view>
+            </view>
+            <text class="quality-dim-score">{{item.score}}</text>
+          </view>
+          <text class="quality-panel-hint">基于完整性、准确性、丰富度、可执行性、信源多样性 5 维评估</text>
+          <text class="quality-panel-hint quality-panel-warn" wx:if="{{qualityHasLimited}}">低分维度信息有限，建议出发前核实后再做安排</text>
+        </view>
+
+        <view class="report-data-source" wx:if="{{dataUpdateTime}}">
+          <text class="ds-update-time">更新于 {{dataUpdateTime}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 攻略过期提示：状态由头部新鲜度徽标承载，此处仅提供刷新操作 -->
+  <view class="expired-banner" wx:if="{{isWeekendExpired}}" bindtap="refreshReport" hover-class="hover-bg">
+    <text class="expired-banner-icon">⚠️</text>
+    <text class="expired-banner-text">点击刷新获取最新攻略</text>
+    <text class="expired-banner-action">{{refreshing ? '刷新中...' : '刷新最新 ›'}}</text>
+  </view>
+
+  <!-- 操作栏 -->
+  <view class="report-toolbar">
+    <view class="toolbar-btn" bindtap="toggleQuickNav" hover-class="hover-bg">
+      <text>📑 跳转</text>
+    </view>
+    <view class="toolbar-btn" bindtap="saveReport" hover-class="hover-bg">
+      <text>💾 保存</text>
+    </view>
+    <button class="toolbar-btn toolbar-share-btn" open-type="share">
+      <text>📤 分享</text>
+    </button>
+    <view class="toolbar-btn toolbar-more-btn" bindtap="toggleMore" hover-class="hover-bg">
+      <text>⋯ 更多</text>
+    </view>
+  </view>
+
+  <!-- 更多操作浮层 -->
+  <view class="quick-nav-overlay" wx:if="{{showMore}}" bindtap="toggleMore"></view>
+  <view class="more-panel" wx:if="{{showMore}}">
+    <view class="more-item" bindtap="expandAll" hover-class="hover-bg">
+      <text class="more-item-icon">📖</text>
+      <text class="more-item-text">全部展开</text>
+    </view>
+    <view class="more-item" bindtap="collapseAll" hover-class="hover-bg">
+      <text class="more-item-icon">📄</text>
+      <text class="more-item-text">全部折叠</text>
+    </view>
+    <view class="more-item" bindtap="copySummary" hover-class="hover-bg">
+      <text class="more-item-icon">📝</text>
+      <text class="more-item-text">复制摘要</text>
+    </view>
+    <view class="more-item" bindtap="copyFullReport" hover-class="hover-bg">
+      <text class="more-item-icon">📋</text>
+      <text class="more-item-text">复制全文</text>
+    </view>
+    <view class="more-item" bindtap="generatePoster" hover-class="hover-bg">
+      <text class="more-item-icon">🖼️</text>
+      <text class="more-item-text">生成海报</text>
+    </view>
+  </view>
+
+  <!-- 我的标记入口（A3）-->
+  <view class="mymarks-bar" wx:if="{{marksSummary.want > 0 || marksSummary.done > 0}}" bindtap="openMarkPanel" hover-class="hover-bg">
+    <text class="mymarks-icon">📌</text>
+    <text class="mymarks-text">我的标记</text>
+    <view class="mymarks-tags">
+      <text class="mymarks-tag want" wx:if="{{marksSummary.want > 0}}">☆ 想去 {{marksSummary.want}}</text>
+      <text class="mymarks-tag done" wx:if="{{marksSummary.done > 0}}">✓ 已去 {{marksSummary.done}}</text>
+    </view>
+    <text class="mymarks-arrow">查看 ›</text>
+  </view>
+
+  <!-- 海报Canvas（隐藏） -->
+  <canvas type="2d" id="posterCanvas" style="position:fixed;left:-9999px;width:600px;height:900px;"></canvas>
+
+  <!-- 快速跳转浮层 -->
+  <view class="quick-nav-overlay" wx:if="{{showQuickNav}}" bindtap="toggleQuickNav"></view>
+  <view class="quick-nav-panel" wx:if="{{showQuickNav}}">
+    <view class="quick-nav-title">快速跳转</view>
+    <scroll-view scroll-y class="quick-nav-list">
+      <view class="quick-nav-item" wx:for="{{report.sections}}" wx:key="index"
+            data-index="{{index}}" bindtap="quickJump" hover-class="hover-bg">
+        <text class="quick-nav-num">{{item._cnNumber}}</text>
+        <text class="quick-nav-text">{{item.title}}</text>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 10节报告 -->
+  <view class="sections-container">
+    <view class="section-card {{expandedSections[item.index] ? 'expanded' : ''}}"
+          wx:for="{{report.sections}}" wx:key="index"
+          id="section-{{item.index}}">
+      <!-- 节标题 -->
+      <view class="section-header" data-index="{{item.index}}" bindtap="toggleSection" hover-class="hover-bg">
+        <view class="section-header-left">
+          <text class="section-num">{{item._cnNumber}}</text>
+          <view class="section-title-wrap">
+            <view class="section-title-row">
+              <text class="section-icon">{{item.icon}}</text>
+              <text class="section-title-text">{{item.title}}</text>
+            </view>
+            <text class="section-subtitle">{{item.content}}</text>
+          </view>
+        </view>
+        <text class="section-arrow {{expandedSections[item.index] ? 'expanded' : ''}}">▸</text>
+      </view>
+
+      <!-- 节内容 -->
+      <view class="section-body" wx:if="{{expandedSections[item.index]}}">
+
+        <!-- 一图速览：指标卡片矩阵 -->
+        <block wx:if="{{item.type === 'overview'}}">
+          <view class="overview-cards">
+            <view class="metric-card" wx:for="{{item.tableData}}" wx:for-item="row" wx:key="label"
+                  style="--metric-color: {{row._color}};">
+              <view class="metric-icon" style="background: {{row._color}}1a; color: {{row._color}};">{{row._icon}}</view>
+              <text class="metric-value">{{row.value}}</text>
+              <text class="metric-label">{{row.label}}</text>
+            </view>
+          </view>
+          <view class="overview-highlight">
+            <text class="overview-highlight-label">本周末亮点</text>
+            <view class="overview-highlight-list">
+              <text class="overview-highlight-item" wx:for="{{report.overview.highlights}}" wx:for-item="h" wx:key="*this">✦ {{h}}</text>
+            </view>
+          </view>
+        </block>
+
+        <!-- 活动全清单 -->
+        <block wx:if="{{item.type === 'activities'}}">
+          <view class="activity-group" wx:for="{{item.groups}}" wx:for-item="grp" wx:key="category">
+            <view class="activity-group-header" data-cat="{{grp.category}}" bindtap="viewCategory" hover-class="hover-bg">
+              <view class="activity-group-dot" style="background: {{grp._color}};"></view>
+              <text class="activity-group-name">{{grp.name}}</text>
+              <text class="activity-group-time-label" wx:if="{{grp._timeLabel}}">{{grp._timeLabel}}</text>
+              <text class="activity-group-limited" wx:if="{{grp._infoLimited}}">信息有限</text>
+              <text class="activity-group-count">{{grp.items.length}}</text>
+              <text class="activity-group-arrow">›</text>
+            </view>
+            <view class="activity-list">
+              <view class="activity-item" wx:for="{{grp.items}}" wx:for-item="act" wx:key="name"
+                    data-name="{{act.name}}" data-venue="{{act.venue}}" data-cat="{{grp.category}}"
+                    bindtap="onActivityTap" hover-class="hover-bg">
+                <view class="activity-item-header">
+                  <text class="activity-item-name">{{act.name}}</text>
+                  <view class="activity-item-right">
+                    <text class="activity-item-price" wx:if="{{act.price}}">{{act.price}}</text>
+                    <view class="mark-btn {{markMap[act.name] === 'done' ? 'done' : (markMap[act.name] === 'want' ? 'want' : '')}}"
+                          data-name="{{act.name}}" catchtap="cycleMark" hover-class="hover-bg">
+                      <text>{{markMap[act.name] === 'done' ? '✓' : (markMap[act.name] === 'want' ? '☆' : '📌')}}</text>
+                    </view>
+                  </view>
+                </view>
+                <view class="activity-item-meta">
+                  <text class="activity-meta-time" wx:if="{{act.time}}">🕐 {{act.time}}</text>
+                  <text class="activity-meta-venue" wx:if="{{act.venue}}">📍 {{act.venue}}</text>
+                </view>
+              </view>
+            </view>
+          </view>
+        </block>
+
+        <!-- 优惠门票/喜茶/美食街/CityWalk -->
+        <block wx:if="{{item.type === 'ticket' || item.type === 'tea' || item.type === 'food' || item.type === 'walk'}}">
+          <view class="info-item-card {{info._expired ? 'info-item-expired' : ''}}" wx:for="{{item.items}}" wx:for-item="info" wx:key="name">
+            <view class="info-item-header">
+              <text class="info-item-name">{{info.name}}</text>
+              <text class="info-item-expired-badge" wx:if="{{info._expired}}">已过期</text>
+              <text class="info-item-price" wx:if="{{info.price}}">{{info.price}}</text>
+              <text class="info-item-rating" wx:if="{{info.rating}}">⭐{{info.rating}}</text>
+              <view class="mark-btn {{markMap[info.name] === 'done' ? 'done' : (markMap[info.name] === 'want' ? 'want' : '')}}"
+                    data-name="{{info.name}}" catchtap="cycleMark" hover-class="hover-bg">
+                <text>{{markMap[info.name] === 'done' ? '✓' : (markMap[info.name] === 'want' ? '☆' : '📌')}}</text>
+              </view>
+            </view>
+            <view class="info-item-meta">
+              <text class="info-item-meta-text" wx:if="{{info.desc}}">{{info.desc}}</text>
+              <text class="info-item-meta-text" wx:if="{{info.address}}">📍 {{info.address}}</text>
+              <text class="info-item-meta-text" wx:if="{{info.feature}}">{{info.feature}}</text>
+              <text class="info-item-meta-text" wx:if="{{info.duration}}">⏱️ {{info.duration}}</text>
+              <text class="info-item-meta-text" wx:if="{{info.distance}}">📏 {{info.distance}}</text>
+              <text class="info-item-meta-text" wx:if="{{info.metro}}">🚇 {{info.metro}}</text>
+              <text class="info-item-meta-text" wx:if="{{info.expiry}}">⏰ 有效期至 {{info.expiry}}{{info._expired ? '（已过期，请勿前往）' : ''}}</text>
+            </view>
+            <view class="info-item-extra" wx:if="{{info.highlights || info.photoSpots}}">
+              <text class="info-extra-label" wx:if="{{info.highlights}}">✨ {{info.highlights}}</text>
+              <text class="info-extra-label" wx:if="{{info.photoSpots}}">📸 {{info.photoSpots}}</text>
+            </view>
+            <text class="info-item-source" wx:if="{{info.source}}">来源: {{info.source}}</text>
+          </view>
+        </block>
+
+        <!-- 地铁路线 -->
+        <block wx:if="{{item.type === 'metro'}}">
+          <view class="metro-summary">
+            <text class="metro-summary-text">共 {{item.metroLines}} 条运营线路</text>
+          </view>
+          <view class="subsection-title">关键换乘站</view>
+          <view class="metro-station-card" wx:for="{{item.keyStations}}" wx:for-item="stn" wx:key="name">
+            <text class="metro-station-name">{{stn.name}}</text>
+            <view class="metro-station-info">
+              <text class="metro-station-lines">{{stn.lines}}</text>
+              <text class="metro-station-exit">{{stn.exit}}</text>
+            </view>
+            <text class="metro-station-note">{{stn.note}}</text>
+          </view>
+          <view class="subsection-title">景区直达地铁</view>
+          <view class="metro-scenic-row" wx:for="{{item.scenicDirect}}" wx:for-item="sd" wx:key="name">
+            <text class="metro-scenic-name">{{sd.name}}</text>
+            <text class="metro-scenic-station">{{sd.station}}</text>
+            <text class="metro-scenic-note">{{sd.note}}</text>
+          </view>
+        </block>
+
+        <!-- 周末组合路线 -->
+        <block wx:if="{{item.type === 'routes'}}">
+          <text class="routes-pref-hint" wx:if="{{item._preferred}}">⚡ 已按「{{item._preferred}}」偏好排序，首条为推荐路线</text>
+          <view class="route-card" wx:for="{{item.routes}}" wx:for-item="rt" wx:key="id" data-route="{{rt.id}}" bindtap="viewRoute" hover-class="card-tap">
+            <view class="route-card-header" style="background: {{rt.color}};">
+              <text class="route-card-icon">{{rt.icon}}</text>
+              <view class="route-card-info">
+                <text class="route-card-name">路线{{rt.id}}: {{rt.name}}</text>
+                <text class="route-card-desc">{{rt.desc}}</text>
+              </view>
+              <text class="route-card-preferred" wx:if="{{rt._preferred}}">{{rt._preferred}}推荐</text>
+            </view>
+            <view class="route-timeline-preview">
+              <view class="route-timeline-item" wx:for="{{rt.timeline}}" wx:for-item="tl" wx:key="time">
+                <text class="route-timeline-time">{{tl.time}}</text>
+                <text class="route-timeline-activity">{{tl.activity}}</text>
+              </view>
+            </view>
+            <view class="route-card-footer">
+              <text class="route-card-cta">查看完整路线 ›</text>
+            </view>
+          </view>
+        </block>
+
+        <!-- 时效可靠性说明 -->
+        <block wx:if="{{item.type === 'reliability'}}">
+          <view class="reliability-card">
+            <text class="reliability-warn">⚠️ 以下信息请在出行前二次确认</text>
+            <view class="reliability-list">
+              <view class="reliability-item" wx:for="{{item.notes}}" wx:for-item="note" wx:key="*this">
+                <text class="reliability-item-dot">●</text>
+                <text class="reliability-item-text">{{note}}</text>
+              </view>
+            </view>
+          </view>
+        </block>
+
+      </view>
+    </view>
+  </view>
+
+  <!-- 生成过程（折叠，默认收起） -->
+  <view class="process-card" wx:if="{{statsData}}">
+    <view class="process-toggle" bindtap="toggleProcess" hover-class="hover-bg">
+      <text class="process-toggle-icon">⚙️</text>
+      <text class="process-toggle-title">查看生成过程</text>
+      <text class="process-toggle-arrow {{expandedProcess ? 'expanded' : ''}}">▸</text>
+    </view>
+    <view class="process-body" wx:if="{{expandedProcess}}">
+      <view class="stats-summary">
+        <view class="stats-item">
+          <text class="stats-value">{{statsData.totalCalls}}</text>
+          <text class="stats-label">总调用次数</text>
+        </view>
+        <view class="stats-item">
+          <text class="stats-value">{{statsData.totalResults}}</text>
+          <text class="stats-label">返回结果</text>
+        </view>
+      </view>
+      <view class="stats-batch" wx:for="{{statsData.batches}}" wx:for-item="batch" wx:key="batch">
+        <view class="stats-batch-header">
+          <text class="stats-batch-name">批次{{batch.batch}}</text>
+          <text class="stats-batch-meta">{{batch.count}}路 · {{batch.duration}}</text>
+        </view>
+        <view class="stats-batch-queries">
+          <text class="stats-query-tag" wx:for="{{batch.queries}}" wx:for-item="q" wx:key="*this">{{q}}</text>
+        </view>
+        <text class="stats-batch-result">→ {{batch.results}} 条结果</text>
+      </view>
+    </view>
+  </view>
+  <view class="sources-card">
+    <view class="section-title">📚 引用源 ({{sources.length}})</view>
+    <view class="sources-grid">
+      <view class="source-item {{item.link ? 'source-link' : ''}}" wx:for="{{sources}}" wx:key="name"
+        data-index="{{index}}" bindtap="onSourceTap">
+        <text class="source-name">{{item.name}}</text>
+        <text class="source-type">{{item.type}}</text>
+        <text class="source-count">{{item.count}}条</text>
+        <text class="source-arrow" wx:if="{{item.link}}">›</text>
+      </view>
+    </view>
+    <text class="sources-hint" wx:if="{{sources.length}}">点击引用源可跳转对应平台查看</text>
+  </view>
+
+  <!-- 底部说明 -->
+  <view class="report-footer">
+    <text class="report-footer-text">本攻略由周末城市游生成 · 生成于 {{report.generatedAt}}</text>
+    <text class="report-footer-warn">出行前请二次确认关键信息</text>
+  </view>
+</view>
+
+<!-- 我的标记面板（A3）-->
+<view class="mark-mask" wx:if="{{markPanel.visible}}" bindtap="closeMarkPanel"></view>
+<view class="mark-sheet" wx:if="{{markPanel.visible}}">
+  <view class="mark-sheet-handle"></view>
+  <view class="mark-sheet-title">📌 我的标记（{{markPanel.list.length}}）</view>
+  <scroll-view scroll-y class="mark-sheet-list">
+    <view class="mark-row" wx:for="{{markPanel.list}}" wx:key="key">
+      <view class="mark-row-status {{item.status === 'done' ? 'done' : 'want'}}">{{item.status === 'done' ? '✓ 已去' : '☆ 想去'}}</view>
+      <view class="mark-row-info">
+        <text class="mark-row-key">{{item.key}}</text>
+        <text class="mark-row-note" wx:if="{{item.note}}">📝 {{item.note}}</text>
+      </view>
+      <view class="mark-row-del" data-key="{{item.key}}" catchtap="removeMarkFromPanel" hover-class="hover-bg">✕</view>
+    </view>
+    <view class="mark-empty" wx:if="{{markPanel.list.length === 0}}">
+      <text>还没有标记，去上方条目点击 📌 标记吧</text>
+    </view>
+  </scroll-view>
+</view>
+
+<!-- 返回顶部（fixed，滚动后显示） -->
+<view class="back-top-btn" wx:if="{{showBackTop && report}}" bindtap="backToTop" hover-class="hover-bg">⬆️</view>
+
+<!-- 加载骨架屏 -->
+<view class="report-skeleton" wx:if="{{loading}}">
+  <view class="skeleton-header"></view>
+  <view class="skeleton-card" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+    <view class="skeleton-line skeleton-line-short"></view>
+    <view class="skeleton-line"></view>
+    <view class="skeleton-line"></view>
+    <view class="skeleton-line skeleton-line-long"></view>
+  </view>
+</view>
+
+<!-- 加载失败空态 -->
+<view class="empty-state" wx:if="{{loadError && !report && !loading}}">
+  <text class="empty-icon">😥</text>
+  <text class="empty-text">攻略加载失败，请检查网络</text>
+  <view class="empty-retry-btn" bindtap="retryLoad" hover-class="hover-bg">重新加载</view>
+</view>

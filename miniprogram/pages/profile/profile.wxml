@@ -1,0 +1,148 @@
+<!-- pages/profile/profile.wxml - v2.0 含微信登录 -->
+<view class="profile-page">
+  <!-- 用户头部 -->
+  <view class="profile-header">
+    <view class="profile-header-bg"></view>
+    <view class="profile-header-content">
+      <!-- 登录状态 -->
+      <block wx:if="{{isLogin && userInfo}}">
+        <view class="profile-avatar">
+          <image wx:if="{{userInfo.avatarUrl}}" src="{{userInfo.avatarUrl}}" class="avatar-img" mode="aspectFill"></image>
+          <text wx:else class="profile-avatar-icon">🧳</text>
+        </view>
+        <view class="profile-info">
+          <text class="profile-name">{{userInfo.nickName || '周末旅行家'}}</text>
+          <text class="profile-desc">探索每一个城市的周末精彩</text>
+        </view>
+      </block>
+      <!-- 未登录状态 -->
+      <block wx:else>
+        <button class="profile-avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+          <text class="profile-avatar-icon">🧳</text>
+        </button>
+        <view class="profile-info">
+          <input class="profile-nickname-input" type="nickname" placeholder="点击输入昵称" placeholder-class="profile-nickname-ph" bindblur="onNicknameInput" bindconfirm="onNicknameInput" />
+          <text class="profile-desc">登录后可同步收藏和攻略</text>
+        </view>
+        <view class="login-btn {{loginLoading ? 'loading' : ''}}" bindtap="handleLogin">
+          <text>{{loginLoading ? '登录中...' : '微信登录'}}</text>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 数据统计 -->
+  <view class="stats-bar">
+    <view class="stats-bar-item">
+      <text class="stats-bar-value">{{totalReports}}</text>
+      <text class="stats-bar-label">已保存攻略</text>
+    </view>
+    <view class="stats-bar-divider"></view>
+    <view class="stats-bar-item">
+      <text class="stats-bar-value">{{favoriteCities.length}}</text>
+      <text class="stats-bar-label">收藏城市</text>
+    </view>
+    <view class="stats-bar-divider"></view>
+    <view class="stats-bar-item">
+      <text class="stats-bar-value">{{totalCities}}</text>
+      <text class="stats-bar-label">支持城市</text>
+    </view>
+  </view>
+
+  <!-- 我的足迹（A5）-->
+  <view class="section footprint-section">
+    <view class="section-header">
+      <text class="section-title">🧭 我的足迹</text>
+    </view>
+    <view class="footprint-grid">
+      <view class="footprint-item">
+        <text class="footprint-value">{{footprint.exploredCities}}</text>
+        <text class="footprint-label">已探索城市</text>
+      </view>
+      <view class="footprint-item">
+        <text class="footprint-value">{{footprint.totalMarks}}</text>
+        <text class="footprint-label">标记点</text>
+      </view>
+      <view class="footprint-item">
+        <text class="footprint-value">{{footprint.doneCount}}</text>
+        <text class="footprint-label">已去过</text>
+      </view>
+      <view class="footprint-item">
+        <text class="footprint-value">{{footprint.wantCount}}</text>
+        <text class="footprint-label">想去</text>
+      </view>
+    </view>
+    <text class="footprint-tip">在攻略/路线中点击 📌 标记想去或已去，足迹会自动累计</text>
+  </view>
+
+  <!-- 收藏城市 -->
+  <view class="section" wx:if="{{favoriteCities.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">⭐ 收藏城市</text>
+    </view>
+    <scroll-view scroll-x class="fav-cities-scroll" enhanced show-scrollbar="{{false}}">
+      <view class="fav-cities">
+        <view class="fav-city-card" wx:for="{{favoriteCities}}" wx:key="code" data-code="{{item.code}}" bindtap="selectCity">
+          <view class="fav-city-remove" data-code="{{item.code}}" catchtap="removeFavorite">✕</view>
+          <text class="fav-city-name">{{item.name}}</text>
+          <text class="fav-city-desc">{{item.desc}}</text>
+          <text class="fav-city-province">{{item.province}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 已保存报告 -->
+  <view class="section" wx:if="{{savedReports.length > 0}}">
+    <view class="section-header">
+      <text class="section-title">📋 我的攻略</text>
+    </view>
+    <view class="report-list">
+      <view class="report-item" wx:for="{{savedReports}}" wx:key="cityCode" data-code="{{item.cityCode}}"
+        bindtap="viewReport" bindlongpress="onReportLongPress" hover-class="card-tap">
+        <view class="report-item-info">
+          <text class="report-item-city">{{item.cityName}}</text>
+          <view class="report-item-date-row">
+            <text class="report-item-date">{{item.generatedAt}}</text>
+            <text class="report-item-expired" wx:if="{{item.reportExpired}}">已过期</text>
+          </view>
+        </view>
+        <view class="report-item-meta">
+          <view class="report-item-del" data-code="{{item.cityCode}}" catchtap="deleteReport">✕</view>
+          <text class="report-item-arrow">›</text>
+        </view>
+      </view>
+      <text class="report-list-hint">长按可删除</text>
+    </view>
+  </view>
+
+  <!-- 功能菜单 -->
+  <view class="section">
+    <view class="section-header">
+      <text class="section-title">⚙️ 功能</text>
+    </view>
+    <view class="menu-list">
+      <view class="menu-item" wx:for="{{menuItems}}" wx:key="action" data-action="{{item.action}}" bindtap="onMenuTap">
+        <text class="menu-icon">{{item.icon}}</text>
+        <view class="menu-info">
+          <text class="menu-name">{{item.name}}</text>
+          <text class="menu-desc">{{item.desc}}</text>
+        </view>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 分享好友 -->
+  <view class="section">
+    <button class="share-btn" open-type="share">
+      <text>📤 分享给好友</text>
+    </button>
+  </view>
+
+  <!-- 版本信息 -->
+  <view class="version-info">
+    <text>周末城市游 v{{dataVersion}}</text>
+    <text>基于 weekend-city-trip 开源项目 | {{totalCities}}座城市</text>
+  </view>
+</view>

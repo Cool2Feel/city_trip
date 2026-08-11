@@ -1,0 +1,119 @@
+<!-- pages/category/category.wxml - v3.0 数据来源 + 触感反馈 + 骨架屏 -->
+<view class="category-page" wx:if="{{category}}" style="--cat-color: {{category.color}};">
+  <!-- 分类头部 -->
+  <view class="cat-header" style="background: linear-gradient(135deg, {{category.color}} 0%, {{category.color}}dd 100%);">
+    <view class="cat-header-content">
+      <view class="cat-header-top">
+        <text class="cat-header-icon">{{category.icon}}</text>
+        <view class="cat-header-letter" style="background: rgba(255,255,255,0.2);">{{category.letter}}</view>
+      </view>
+      <text class="cat-header-name">{{category.fullName}}</text>
+      <view class="cat-header-meta">
+        <text class="cat-header-tag">{{category.timeSensitivity === 'strong' ? '出行前确认' : category.timeSensitivity === 'medium' ? '建议确认' : category.timeLabel}}</text>
+        <text class="cat-header-count">{{items.length}} 条信息</text>
+        <text class="cat-header-limited" wx:if="{{groupData._infoLimited}}">信息有限</text>
+        <text class="cat-header-update" wx:if="{{dataUpdateTime}}">更新于 {{dataUpdateTime}}</text>
+      </view>
+      <text class="cat-header-desc">{{category.desc}}</text>
+      <text class="cat-header-value">{{category.value}}</text>
+      <view class="cat-header-map-btn" bindtap="goMap" hover-class="hover-bg">🗺️ 在地图查看</view>
+    </view>
+  </view>
+
+  <!-- 周末过期提示 -->
+  <view class="expired-banner" wx:if="{{isWeekendExpired}}" bindtap="refreshCategory" hover-class="hover-bg">
+    <text class="expired-banner-icon">⚠️</text>
+    <text class="expired-banner-text">这是周末的攻略，可能已过时</text>
+    <text class="expired-banner-action">刷新最新 ›</text>
+  </view>
+
+  <!-- 内容列表 -->
+  <view class="cat-content">
+    <!-- 活动类 -->
+    <block wx:if="{{catId === 'concert' || catId === 'sport' || catId === 'market' || catId === 'museum' || catId === 'scenic'}}">
+      <view class="cat-item-card" wx:for="{{items}}" wx:key="name" data-name="{{item.name}}" bindtap="openExternal" hover-class="card-tap">
+        <view class="cat-item-header">
+          <text class="cat-item-name">{{item.name}}</text>
+          <text class="cat-item-price" wx:if="{{item.price}}">{{item.price}}</text>
+        </view>
+        <view class="cat-item-meta">
+          <text class="cat-meta-item" wx:if="{{item.time}}">🕐 {{item.time}}</text>
+          <text class="cat-meta-item" wx:if="{{item.venue}}">📍 {{item.venue}}</text>
+        </view>
+        <text class="cat-item-source" wx:if="{{item.source}}">来源: {{item.source}}</text>
+      </view>
+    </block>
+
+    <!-- 喜茶/美食街/CityWalk/门票 -->
+    <block wx:if="{{catId === 'tea' || catId === 'food' || catId === 'walk' || catId === 'ticket'}}">
+      <view class="cat-info-card" wx:for="{{items}}" wx:key="name" data-name="{{item.name}}" bindtap="openExternal" hover-class="card-tap">
+        <view class="cat-info-header">
+          <text class="cat-info-name">{{item.name}}</text>
+          <text class="cat-info-expired" wx:if="{{item._expired}}">已过期</text>
+          <text class="cat-info-price" wx:if="{{item.price}}">{{item.price}}</text>
+          <text class="cat-info-rating" wx:if="{{item.rating}}">⭐{{item.rating}}</text>
+        </view>
+        <view class="cat-info-meta">
+          <text class="cat-meta-text" wx:if="{{item.desc}}">{{item.desc}}</text>
+          <text class="cat-meta-text" wx:if="{{item.address}}">📍 {{item.address}}</text>
+          <text class="cat-meta-text" wx:if="{{item.feature}}">✨ {{item.feature}}</text>
+          <text class="cat-meta-text" wx:if="{{item.duration}}">⏱️ {{item.duration}} · {{item.distance}}</text>
+          <text class="cat-meta-text" wx:if="{{item.metro}}">🚇 {{item.metro}}</text>
+          <text class="cat-meta-text" wx:if="{{item.expiry}}">⏰ 有效期至 {{item.expiry}}{{item._expired ? '（已过期，请勿前往）' : ''}}</text>
+        </view>
+        <view class="cat-info-extra" wx:if="{{item.highlights || item.photoSpots}}">
+          <text class="cat-info-extra-item" wx:if="{{item.highlights}}">🎯 {{item.highlights}}</text>
+          <text class="cat-info-extra-item" wx:if="{{item.photoSpots}}">📸 {{item.photoSpots}}</text>
+        </view>
+        <text class="cat-info-source" wx:if="{{item.source}}">来源: {{item.source}}</text>
+      </view>
+    </block>
+
+    <!-- 地铁 -->
+    <block wx:if="{{catId === 'metro'}}">
+      <view class="cat-metro-card" wx:for="{{items}}" wx:key="name" hover-class="card-tap">
+        <view class="cat-metro-header">
+          <text class="cat-metro-name">{{item.name}}</text>
+        </view>
+        <view class="cat-metro-info">
+          <text class="cat-metro-lines" wx:if="{{item.lines}}">{{item.lines}}</text>
+          <text class="cat-metro-exit" wx:if="{{item.exit}}">{{item.exit}}</text>
+        </view>
+        <text class="cat-metro-note" wx:if="{{item.note}}">{{item.note}}</text>
+      </view>
+    </block>
+
+    <!-- 购物中心 -->
+    <block wx:if="{{catId === 'mall'}}">
+      <view class="cat-item-card" wx:for="{{items}}" wx:key="name" hover-class="card-tap">
+        <view class="cat-item-header">
+          <text class="cat-item-name">{{item.name}}</text>
+          <text class="cat-item-price" wx:if="{{item.price}}">{{item.price}}</text>
+        </view>
+        <text class="cat-item-address" wx:if="{{item.address}}">📍 {{item.address}}</text>
+        <text class="cat-item-note" wx:if="{{item.note}}">{{item.note}}</text>
+      </view>
+    </block>
+
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{items.length === 0 && !loading}}">
+      <text class="empty-icon">📭</text>
+      <text class="empty-text">暂无{{category.name}}数据</text>
+    </view>
+  </view>
+
+  <!-- 底部说明 -->
+  <view class="cat-footer">
+    <text class="cat-footer-text">数据来源: 多平台搜索聚合 · 建议出行前二次确认</text>
+  </view>
+</view>
+
+<!-- 骨架屏 -->
+<view class="cat-skeleton" wx:if="{{loading}}">
+  <view class="skeleton-header"></view>
+  <view class="skeleton-card" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+    <view class="skeleton-line skeleton-line-short"></view>
+    <view class="skeleton-line"></view>
+    <view class="skeleton-line skeleton-line-long"></view>
+  </view>
+</view>

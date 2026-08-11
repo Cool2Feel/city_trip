@@ -1,0 +1,222 @@
+<!-- pages/home/home.wxml -->
+<view class="home-page">
+  <!-- 顶部渐变区域 -->
+  <view class="hero" style="padding-top: {{statusBarHeight + 20}}px;">
+    <image class="hero-bg-img" src="/assets/images/home-banner.jpg" mode="aspectFill" />
+    <view class="hero-bg-overlay"></view>
+    <view class="hero-content">
+      <!-- 城市选择器 -->
+      <view class="city-bar" bindtap="selectCity">
+        <view class="city-info">
+          <text class="city-icon">📍</text>
+          <text class="city-name">{{currentCity ? currentCity.name : '选择城市'}}</text>
+          <text class="city-arrow">▸</text>
+        </view>
+        <view class="fav-btn {{isFavorite ? 'active' : ''}}" catchtap="toggleFavorite" wx:if="{{currentCity}}">
+          <text>{{isFavorite ? '★' : '☆'}}</text>
+        </view>
+      </view>
+
+      <!-- 周末日期 -->
+      <view class="weekend-info" wx:if="{{weekendDate}}">
+        <text class="weekend-label">本周末</text>
+        <text class="weekend-date">{{weekendDate.saturdayLabel}}</text>
+        <text class="weekend-sep">~</text>
+        <text class="weekend-date">{{weekendDate.sundayLabel}}</text>
+      </view>
+
+      <!-- Slogan -->
+      <view class="slogan">
+        <text class="slogan-main">一句话，生成城市周末深度攻略</text>
+        <text class="slogan-sub">演出 · 市集 · 美食 · CityWalk 一站式规划</text>
+      </view>
+
+      <!-- 快捷操作按钮 -->
+      <view class="hero-actions" wx:if="{{currentCity}}">
+        <view class="btn btn-primary hero-btn" bindtap="viewReport">
+          <text>📋 查看攻略</text>
+        </view>
+        <view class="btn btn-outline hero-btn-outline" bindtap="viewMap" wx:if="{{report}}">
+          <text>🗺️ 查看地图</text>
+        </view>
+      </view>
+      <view class="hero-actions" wx:else>
+        <view class="btn btn-primary hero-btn" bindtap="selectCity">
+          <text>📍 选择城市开始</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 全局搜索入口 -->
+  <view class="search-entry" bindtap="openSearch" hover-class="hover-bg">
+    <text class="search-entry-icon">🔍</text>
+    <text class="search-entry-placeholder">搜索演出 / 市集 / 美食… 跨 {{cityCount}} 座城市</text>
+  </view>
+
+  <!-- 热门城市 -->
+  <view class="section" wx:if="{{!currentCity}}">
+    <view class="section-title">🔥 热门城市</view>
+    <view class="hot-cities-grid">
+      <view class="hot-city-card" wx:for="{{hotCities}}" wx:key="code" data-code="{{item.code}}" bindtap="quickSelectCity">
+        <view class="hot-city-name">{{item.name}}</view>
+        <view class="hot-city-desc">{{item.desc}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 报告加载中骨架屏 -->
+  <view class="home-skeleton" wx:if="{{currentCity && !report && !loadError}}">
+    <view class="skeleton-header"></view>
+    <view class="skeleton-card">
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line skeleton-line-short"></view>
+    </view>
+    <view class="skeleton-card">
+      <view class="skeleton-line skeleton-line-long"></view>
+      <view class="skeleton-line skeleton-line-short"></view>
+    </view>
+    <view class="skeleton-card">
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line skeleton-line-short"></view>
+    </view>
+  </view>
+
+  <!-- 报告加载失败空态 -->
+  <view class="empty-state" wx:if="{{currentCity && loadError && !report}}">
+    <text class="empty-icon">😥</text>
+    <text class="empty-text">攻略加载失败，请检查网络</text>
+    <view class="empty-retry-btn" bindtap="retryLoadReport" hover-class="hover-bg">重新加载</view>
+  </view>
+
+  <!-- 报告概览（已选城市） -->
+  <view class="section" wx:if="{{report && currentCity}}">
+    <!-- 一图速览 -->
+    <view class="card overview-card" bindtap="viewReport" hover-class="card-tap">
+      <view class="overview-header">
+        <text class="overview-icon">📊</text>
+        <text class="overview-title">{{currentCity.name}}周末一图速览</text>
+        <text class="overview-arrow">›</text>
+      </view>
+      <view class="overview-weather">
+        <block wx:if="{{weather}}">
+          <text class="weather-text">{{report.overview.weekend}} {{weather.icon}} {{weather.text}} {{weather.temp}}</text>
+        </block>
+        <block wx:else>
+          <text class="weather-text">{{report.overview.weekend}} {{report.overview.weather}} {{report.overview.tempRange}}</text>
+        </block>
+      </view>
+      <view class="overview-grid">
+        <view class="overview-item">
+          <text class="overview-value">{{report.overview.concertCount}}</text>
+          <text class="overview-label">演出</text>
+        </view>
+        <view class="overview-item">
+          <text class="overview-value">{{report.overview.marketCount}}</text>
+          <text class="overview-label">市集</text>
+        </view>
+        <view class="overview-item">
+          <text class="overview-value">{{report.overview.museumCount}}</text>
+          <text class="overview-label">展览</text>
+        </view>
+        <view class="overview-item">
+          <text class="overview-value">{{report.overview.foodStreetCount}}</text>
+          <text class="overview-label">美食街</text>
+        </view>
+        <view class="overview-item">
+          <text class="overview-value">{{report.overview.cityWalkCount}}</text>
+          <text class="overview-label">CityWalk</text>
+        </view>
+        <view class="overview-item">
+          <text class="overview-value">{{report.overview.teaShopCount}}</text>
+          <text class="overview-label">喜茶</text>
+        </view>
+      </view>
+      <view class="overview-data-meta">
+        <text class="data-update-time" wx:if="{{dataUpdateTime}}">更新于 {{dataUpdateTime}}</text>
+      </view>
+    </view>
+
+    <!-- 周末过期提示 -->
+    <view class="expired-banner" wx:if="{{isWeekendExpired}}" bindtap="refreshReport" hover-class="hover-bg">
+      <text class="expired-banner-icon">⚠️</text>
+      <text class="expired-banner-text">这是 {{report.overview.weekend}} 的攻略，可能已过时</text>
+      <text class="expired-banner-action">刷新最新 ›</text>
+    </view>
+
+    <!-- 精选亮点 -->
+    <view class="card">
+      <view class="section-title">✨ 本周末亮点</view>
+      <view class="highlights-list">
+        <view class="highlight-item" wx:for="{{report.overview.highlights}}" wx:key="*this">
+          <text class="highlight-dot">●</text>
+          <text class="highlight-text">{{item}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 快捷入口 -->
+    <view class="quick-nav">
+      <view class="quick-nav-item" bindtap="viewMap">
+        <text class="quick-nav-icon">🗺️</text>
+        <text class="quick-nav-label">地图标记</text>
+      </view>
+      <view class="quick-nav-item" bindtap="viewRoutes">
+        <text class="quick-nav-icon">🛤️</text>
+        <text class="quick-nav-label">周末路线</text>
+      </view>
+      <view class="quick-nav-item" data-cat="concert" bindtap="viewCategory">
+        <text class="quick-nav-icon">🎤</text>
+        <text class="quick-nav-label">演出活动</text>
+      </view>
+      <view class="quick-nav-item" data-cat="food" bindtap="viewCategory">
+        <text class="quick-nav-icon">🍜</text>
+        <text class="quick-nav-label">美食推荐</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 功能介绍（未选城市） -->
+  <view class="section" wx:if="{{!currentCity}}">
+    <view class="card">
+      <view class="section-title">🎯 核心功能</view>
+      <view class="feature-list">
+        <view class="feature-item">
+          <text class="feature-num">1</text>
+          <view class="feature-content">
+            <text class="feature-title">11方向深度调研</text>
+            <text class="feature-desc">演唱会、集市、球赛、博物馆、美食街、CityWalk等全覆盖</text>
+          </view>
+        </view>
+        <view class="feature-item">
+          <text class="feature-num">2</text>
+          <view class="feature-content">
+            <text class="feature-title">10节标准报告</text>
+            <text class="feature-desc">从一图速览到周末路线，结构化呈现城市旅游情报</text>
+          </view>
+        </view>
+        <view class="feature-item">
+          <text class="feature-num">3</text>
+          <view class="feature-content">
+            <text class="feature-title">3条主题路线</text>
+            <text class="feature-desc">文艺青年/情侣浪漫/亲子家庭，带时间表的完整行程</text>
+          </view>
+        </view>
+        <view class="feature-item">
+          <text class="feature-num">4</text>
+          <view class="feature-content">
+            <text class="feature-title">11类地图标记</text>
+            <text class="feature-desc">分类配色系统，支持筛选与卡片联动</text>
+          </view>
+        </view>
+        <view class="feature-item">
+          <text class="feature-num">5</text>
+          <view class="feature-content">
+            <text class="feature-title">质量保障闭环</text>
+            <text class="feature-desc">5维度质量检查 + 补查询迭代，确保攻略质量</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

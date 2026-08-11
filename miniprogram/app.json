@@ -1,0 +1,63 @@
+{
+  "pages": [
+    "pages/home/home",
+    "pages/discover/discover",
+    "pages/map/map",
+    "pages/profile/profile",
+    "pages/city-select/city-select",
+    "pages/report/report",
+    "pages/category/category",
+    "pages/route/route",
+    "pages/search/search",
+    "pages/packing/packing"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "周末城市游",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f5f6f8",
+    "enablePullDownRefresh": false
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#4A90D9",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页",
+        "iconPath": "assets/tab/home.png",
+        "selectedIconPath": "assets/tab/home_active.png"
+      },
+      {
+        "pagePath": "pages/discover/discover",
+        "text": "发现",
+        "iconPath": "assets/tab/discover.png",
+        "selectedIconPath": "assets/tab/discover_active.png"
+      },
+      {
+        "pagePath": "pages/map/map",
+        "text": "地图",
+        "iconPath": "assets/tab/map.png",
+        "selectedIconPath": "assets/tab/map_active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "assets/tab/profile.png",
+        "selectedIconPath": "assets/tab/profile_active.png"
+      }
+    ]
+  },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于显示城市旅游地图标记点和导航功能"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation", "chooseLocation"],
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

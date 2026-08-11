@@ -1,0 +1,88 @@
+<!-- pages/search/search.wxml - 跨城市内容搜索 -->
+<view class="search-page">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-input-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="搜索演出 / 市集 / 美食…"
+        placeholder-class="search-input-placeholder"
+        value="{{keyword}}"
+        confirm-type="search"
+        bindinput="onInput"
+        bindconfirm="onConfirm"
+        focus="{{autoFocus}}"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+    <view class="search-btn" bindtap="onConfirm" hover-class="hover-bg">搜索</view>
+  </view>
+
+  <!-- 未搜索：搜索历史 + 热门关键词 -->
+  <view class="search-guide" wx:if="{{!searched && !searching}}">
+    <block wx:if="{{history.length}}">
+      <view class="guide-title-row">
+        <text class="guide-title">搜索历史</text>
+        <text class="history-clear" bindtap="clearHistory" hover-class="hover-bg">清空</text>
+      </view>
+      <view class="hot-keywords">
+        <view class="hot-keyword history-item" wx:for="{{history}}" wx:key="*this"
+          data-kw="{{item}}" bindtap="onHistoryTap" hover-class="hover-bg">
+          <text class="history-word">{{item}}</text>
+          <text class="history-remove" data-kw="{{item}}" catchtap="removeHistory">✕</text>
+        </view>
+      </view>
+    </block>
+
+    <view class="guide-title">试试搜索</view>
+    <view class="hot-keywords">
+      <view class="hot-keyword" wx:for="{{hotKeywords}}" wx:key="*this" data-kw="{{item}}" bindtap="onHotTap" hover-class="hover-bg">{{item}}</view>
+    </view>
+    <text class="search-hint">跨 {{cityCount}} 座城市搜索演出、市集、美食、展览等攻略内容</text>
+  </view>
+
+  <!-- 搜索中 -->
+  <view class="search-loading" wx:if="{{searching}}">
+    <text class="search-loading-text">正在搜索…</text>
+  </view>
+
+  <!-- 搜索失败 -->
+  <view class="empty-state" wx:if="{{searchError && !searching}}">
+    <text class="empty-icon">😥</text>
+    <text class="empty-text">搜索失败，请检查网络</text>
+    <view class="empty-retry-btn" bindtap="retrySearch" hover-class="hover-bg">重新搜索</view>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view class="search-results" wx:if="{{searched && !searching && !searchError}}">
+    <view class="search-summary" wx:if="{{total > 0}}">共 {{total}} 条结果</view>
+    <view class="search-nothing" wx:if="{{total === 0}}">
+      <text class="nothing-icon">🔍</text>
+      <text class="nothing-text">没有找到与「{{keyword}}」相关的内容</text>
+      <text class="nothing-hint">换个关键词试试，如「演唱会」「博物馆」</text>
+    </view>
+
+    <view class="result-group" wx:for="{{results}}" wx:key="_key">
+      <view class="result-group-header" data-city-code="{{item.cityCode}}" data-cat-id="{{item.category}}" bindtap="openResult" hover-class="hover-bg">
+        <text class="result-group-city">{{item.cityName}}</text>
+        <text class="result-group-cat">{{item.categoryLabel}}</text>
+        <text class="result-group-count">{{item.items.length}} 条</text>
+        <text class="result-group-arrow">›</text>
+      </view>
+      <view
+        class="result-item"
+        wx:for="{{item.items}}"
+        wx:for-item="it"
+        wx:key="name"
+        data-city-code="{{item.cityCode}}"
+        data-cat-id="{{item.category}}"
+        bindtap="openResult"
+        hover-class="card-tap"
+      >
+        <text class="result-item-name">{{it.name}}</text>
+        <text class="result-item-sub" wx:if="{{it.sub}}">{{it.sub}}</text>
+      </view>
+    </view>
+  </view>
+</view>

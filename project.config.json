@@ -1,0 +1,27 @@
+{
+  "description": "周末城市游 - 一句话生成城市周末深度旅游攻略",
+  "miniprogramRoot": "miniprogram/",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": true,
+    "bigPackageSizeSupport": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.3.4",
+  "appid": "",
+  "projectname": "weekend-city-trip",
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

@@ -1,0 +1,235 @@
+/* pages/search/search.wxss */
+.search-page {
+  min-height: 100vh;
+  background: #f5f6f8;
+  padding-bottom: 40rpx;
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.search-input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #f2f3f5;
+  border-radius: 32rpx;
+  padding: 0 24rpx;
+  height: 72rpx;
+}
+
+.search-input-icon {
+  font-size: 28rpx;
+  margin-right: 12rpx;
+  opacity: 0.7;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 28rpx;
+  height: 72rpx;
+}
+
+.search-input-placeholder {
+  color: #999;
+}
+
+.search-clear {
+  font-size: 28rpx;
+  color: #999;
+  padding: 8rpx;
+}
+
+.search-btn {
+  margin-left: 20rpx;
+  color: #4A90D9;
+  font-size: 28rpx;
+  font-weight: 600;
+  padding: 8rpx 12rpx;
+}
+
+/* 引导 */
+.search-guide {
+  padding: 60rpx 32rpx;
+}
+
+.guide-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.guide-title-row .guide-title {
+  margin-bottom: 0;
+}
+
+.history-clear {
+  font-size: 24rpx;
+  color: #999;
+  padding: 8rpx;
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.history-word {
+  color: #333;
+}
+
+.history-remove {
+  font-size: 20rpx;
+  color: #ccc;
+  padding: 0 4rpx;
+  flex-shrink: 0;
+}
+
+.guide-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 24rpx;
+}
+
+.hot-keywords {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.hot-keyword {
+  background: #fff;
+  border: 1rpx solid #e5e6eb;
+  border-radius: 28rpx;
+  padding: 12rpx 28rpx;
+  margin: 0 20rpx 20rpx 0;
+  font-size: 26rpx;
+  color: #4A90D9;
+}
+
+.search-hint {
+  display: block;
+  margin-top: 40rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.search-loading {
+  padding: 120rpx 0;
+  text-align: center;
+}
+
+.search-loading-text {
+  font-size: 26rpx;
+  color: #999;
+}
+
+/* 结果 */
+.search-results {
+  padding: 8rpx 24rpx 40rpx;
+}
+
+.search-summary {
+  font-size: 24rpx;
+  color: #999;
+  padding: 16rpx 8rpx;
+}
+
+.search-nothing {
+  padding: 120rpx 0;
+  text-align: center;
+}
+
+.nothing-icon {
+  font-size: 64rpx;
+  display: block;
+  margin-bottom: 20rpx;
+}
+
+.nothing-text {
+  font-size: 28rpx;
+  color: #666;
+  display: block;
+}
+
+.nothing-hint {
+  display: block;
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.result-group {
+  background: #fff;
+  border-radius: 16rpx;
+  margin-top: 20rpx;
+  overflow: hidden;
+}
+
+.result-group-header {
+  display: flex;
+  align-items: center;
+  padding: 20rpx 24rpx;
+  border-bottom: 1rpx solid #f2f3f5;
+}
+
+.result-group-city {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.result-group-cat {
+  margin-left: 12rpx;
+  font-size: 22rpx;
+  color: #4A90D9;
+  background: rgba(74, 144, 217, 0.1);
+  border-radius: 8rpx;
+  padding: 4rpx 12rpx;
+}
+
+.result-group-count {
+  flex: 1;
+  text-align: right;
+  font-size: 22rpx;
+  color: #999;
+}
+
+.result-group-arrow {
+  margin-left: 8rpx;
+  color: #ccc;
+  font-size: 28rpx;
+}
+
+.result-item {
+  padding: 20rpx 24rpx;
+  border-bottom: 1rpx solid #f5f6f8;
+}
+
+.result-item:last-child {
+  border-bottom: none;
+}
+
+.result-item-name {
+  display: block;
+  font-size: 26rpx;
+  color: #333;
+  line-height: 1.4;
+}
+
+.result-item-sub {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #999;
+  line-height: 1.4;
+}

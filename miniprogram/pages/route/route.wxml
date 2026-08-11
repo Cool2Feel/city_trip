@@ -1,0 +1,246 @@
+<!-- pages/route/route.wxml - v3.0 交通估算 + 日历导入 + 外链导航 -->
+<view class="route-page" wx:if="{{activeRoute}}">
+  <!-- 路线选择Tab -->
+  <view class="route-tabs">
+    <view
+      class="route-tab {{activeRouteId === item.id ? 'active' : ''}}"
+      wx:for="{{routes}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="switchRoute"
+      hover-class="card-tap"
+      style="--route-color: {{item.color}};"
+    >
+      <text class="route-tab-icon">{{item.icon}}</text>
+      <text class="route-tab-name">路线{{item.id}}</text>
+      <text class="route-tab-label">{{item.name}}</text>
+    </view>
+  </view>
+
+  <!-- 路线封面图 -->
+  <image wx:if="{{activeRoute.coverImage}}" class="route-cover" src="{{activeRoute.coverImage}}" mode="aspectFill" />
+
+  <!-- 路线头部 -->
+  <view class="route-header" style="background: linear-gradient(135deg, {{activeRoute.color}} 0%, {{activeRoute.color}}cc 100%);">
+    <view class="route-header-top">
+      <text class="route-header-icon">{{activeRoute.icon}}</text>
+      <view class="route-header-info">
+        <text class="route-header-name">路线{{activeRoute.id}}: {{activeRoute.name}}</text>
+        <text class="route-header-desc">{{activeRoute.desc}}</text>
+      </view>
+    </view>
+    <view class="route-header-meta">
+      <view class="route-meta-item">
+        <text class="route-meta-value">{{activeRoute.timeline.length}}</text>
+        <text class="route-meta-label">个行程</text>
+      </view>
+      <view class="route-meta-divider"></view>
+      <view class="route-meta-item">
+        <text class="route-meta-value">{{activeRoute.timeline[0].time}}</text>
+        <text class="route-meta-label">出发时间</text>
+      </view>
+      <view class="route-meta-divider"></view>
+      <view class="route-meta-item">
+        <text class="route-meta-value">{{activeRoute.timeline[activeRoute.timeline.length - 1].time}}</text>
+        <text class="route-meta-label">结束时间</text>
+      </view>
+    </view>
+    <!-- 更新时间 -->
+    <view class="route-data-source" wx:if="{{dataUpdateTime}}">
+      <text class="ds-update-time">更新于 {{dataUpdateTime}}</text>
+    </view>
+  </view>
+
+  <!-- 周末过期提示 -->
+  <view class="expired-banner" wx:if="{{isWeekendExpired}}" bindtap="refreshRouteTap" hover-class="hover-bg">
+    <text class="expired-banner-icon">⚠️</text>
+    <text class="expired-banner-text">这是周末的攻略，可能已过时</text>
+    <text class="expired-banner-action">刷新最新 ›</text>
+  </view>
+
+  <!-- 路线地图折线（A2：借鉴 TREK Route Viz）-->
+  <view class="route-map-card">
+    <view class="route-map-head" bindtap="toggleRouteMap" hover-class="hover-bg">
+      <view class="route-map-title">
+        <text class="route-map-icon">🗺️</text>
+        <text>路线地图</text>
+      </view>
+      <view class="route-map-sub">
+        <text class="route-map-count" wx:if="{{routeMap.total > 0}}">已定位 {{routeMap.matchedCount}}/{{routeMap.total}} 个节点</text>
+        <text class="route-map-toggle">{{mapVisible ? '收起 ▴' : '展开 ▾'}}</text>
+      </view>
+    </view>
+    <view wx:if="{{mapVisible}}" class="route-map-body">
+      <block wx:if="{{routeMap.matchedCount >= 2}}">
+        <map
+          class="route-map-view"
+          latitude="{{routeMap.center.latitude}}"
+          longitude="{{routeMap.center.longitude}}"
+          markers="{{routeMap.markers}}"
+          polyline="{{routeMap.polyline}}"
+          include-points="{{routeMap.includePoints}}"
+          scale="12"
+          enable-zoom
+          enable-scroll
+        ></map>
+        <text class="route-map-hint">{{routeOptimized ? '折线按顺路顺序连接各节点' : '折线按时间顺序连接各节点'}}，点击地图标记查看站序</text>
+      </block>
+      <view wx:else class="route-map-empty">
+        <text class="route-map-empty-icon">📍</text>
+        <text class="route-map-empty-text">该路线可定位的地图节点不足，暂无法绘制折线</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 预算估算（A4：借鉴 TREK Costs，做减法）-->
+  <view class="route-budget-card" wx:if="{{budget}}">
+    <view class="route-budget-head">
+      <text class="route-budget-title">💰 预算估算</text>
+      <text class="route-budget-sub">基于沿线票价/餐饮（人均）</text>
+    </view>
+    <view class="route-budget-grid">
+      <view class="budget-item">
+        <text class="budget-value">{{budget.ticketMin}}<text wx:if="{{budget.ticketMax > budget.ticketMin}}">~{{budget.ticketMax}}</text>元</text>
+        <text class="budget-label">门票/活动</text>
+      </view>
+      <view class="budget-item">
+        <text class="budget-value">{{budget.foodMin}}<text wx:if="{{budget.foodMax > budget.foodMin}}">~{{budget.foodMax}}</text>元</text>
+        <text class="budget-label">餐饮</text>
+      </view>
+      <view class="budget-item budget-item-total">
+        <text class="budget-value">{{budget.totalMin}}<text wx:if="{{budget.totalMax > budget.totalMin}}">~{{budget.totalMax}}</text>元</text>
+        <text class="budget-label">合计(必花)</text>
+      </view>
+    </view>
+    <text class="route-budget-note" wx:if="{{budget.freeCount > 0}}">含 {{budget.freeCount}} 个免费点（市集/街区/展馆）· 价格为参考，出行前请核实</text>
+    <text class="route-budget-note" wx:else>价格为参考，出行前请核实</text>
+  </view>
+  <view class="route-budget-card route-budget-empty" wx:elif="{{activeRoute}}">
+    <text class="route-budget-note">该路线暂无可对应的票价/餐饮数据，预算暂不可用</text>
+  </view>
+
+  <!-- 时间线 -->
+  <view class="route-timeline-container">
+    <view class="route-timeline-title">
+      <text>📅 详细行程</text>
+      <view wx:if="{{routeOptInfo}}"
+            class="opt-toggle {{routeOptimized ? 'on' : ''}} {{routeOptInfo.canOptimize ? '' : 'disabled'}}"
+            bindtap="toggleOptimizeRoute" hover-class="hover-bg">
+        <text class="opt-toggle-icon">🧭</text>
+        <text class="opt-toggle-text">{{routeOptimized ? '顺路模式' : '智能重排'}}</text>
+      </view>
+    </view>
+    <view class="opt-banner" wx:if="{{routeOptimized && routeOptInfo.canOptimize}}">
+      <text class="opt-banner-icon">✅</text>
+      <text class="opt-banner-text">
+        <block wx:if="{{routeOptInfo.savedKm >= 0.5}}">已按地理就近重排，比原顺序省 {{routeOptInfo.savedKmText}}km · 约{{routeOptInfo.savedMinText}}分钟</block>
+        <block wx:else>当前路线已是较顺路顺序</block>
+      </text>
+    </view>
+    <view class="route-timeline">
+      <view class="timeline-item" wx:for="{{routeOptimized ? optimizedTimeline : activeRoute.timeline}}" wx:key="time">
+        <!-- 时间线左侧 -->
+        <view class="timeline-left">
+          <view class="timeline-dot" style="background: {{activeRoute.color}};">
+            <text class="timeline-dot-num">{{index + 1}}</text>
+          </view>
+          <view class="timeline-line" wx:if="{{index < activeRoute.timeline.length - 1}}" style="background: {{activeRoute.color}}33;"></view>
+        </view>
+
+        <!-- 时间线右侧 -->
+        <view class="timeline-right">
+          <view class="timeline-time" style="color: {{activeRoute.color}};">
+            <block wx:if="{{routeOptimized}}">第{{index + 1}}站</block>
+            <block wx:else>{{item.time}}</block>
+          </view>
+          <text class="timeline-orig-time" wx:if="{{routeOptimized}}">建议时段 {{item.time}}</text>
+          <view class="timeline-card">
+            <text class="timeline-activity">{{item.activity}}</text>
+            <view class="timeline-meta">
+              <text class="timeline-location" data-location="{{item.location}}" bindtap="openInMap">📍 {{item.location}}</text>
+            </view>
+            <!-- 交通估算 -->
+            <view class="timeline-travel" wx:if="{{item._travelFromPrev}}">
+              <text class="timeline-travel-text">🚇 与上一站相距 {{item._travelFromPrev.distance}}km · 约{{item._travelFromPrev.time}}</text>
+            </view>
+            <view class="timeline-note" wx:if="{{item.note}}">
+              <text class="timeline-note-text">💡 {{item.note}}</text>
+            </view>
+            <!-- 个人标记（A3：想去/已去 + 备注）-->
+            <view class="timeline-mark">
+              <view class="timeline-mark-pill {{markMap[item.activity] === 'done' ? 'done' : (markMap[item.activity] === 'want' ? 'want' : '')}}"
+                    data-activity="{{item.activity}}" bindtap="cycleTimelineMark" hover-class="hover-bg">
+                <text>{{markMap[item.activity] === 'done' ? '✓ 已去' : (markMap[item.activity] === 'want' ? '☆ 想去' : '○ 标记')}}</text>
+              </view>
+              <view class="timeline-note-btn" data-activity="{{item.activity}}" bindtap="openTimelineNote" hover-class="hover-bg">
+                <text>✎ 备注{{noteMap[item.activity] ? '(' + noteMap[item.activity].length + ')' : ''}}</text>
+              </view>
+            </view>
+            <view class="timeline-note timeline-user-note" wx:if="{{noteMap[item.activity]}}">
+              <text class="timeline-note-text">📝 {{noteMap[item.activity]}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作 -->
+  <view class="route-actions">
+    <view class="btn btn-outline route-action-btn" bindtap="copyRoute" hover-class="card-tap">
+      <text>📋 复制行程</text>
+    </view>
+    <view class="btn btn-outline route-action-btn" bindtap="addToCalendar" hover-class="card-tap">
+      <text>📅 导入日历</text>
+    </view>
+    <view class="btn btn-outline route-action-btn" bindtap="goPacking" hover-class="card-tap">
+      <text>🎒 出行清单</text>
+    </view>
+  </view>
+
+  <!-- 温馨提示 -->
+  <view class="route-tips">
+    <view class="route-tips-title">⚠️ 出行提示</view>
+    <view class="route-tips-list">
+      <text class="route-tip-item">• 演出/活动时间请出行前在官方渠道二次确认</text>
+      <text class="route-tip-item">• 建议提前在公众号/APP预约博物馆和景区门票</text>
+      <text class="route-tip-item">• 路线时间可根据实际情况灵活调整</text>
+      <text class="route-tip-item">• 周末热门地点建议提前出发避开高峰</text>
+      <text class="route-tip-item">• 点击 📍 地点可直接打开导航</text>
+    </view>
+  </view>
+</view>
+
+<!-- 备注弹窗（A3）-->
+<view class="note-mask" wx:if="{{noteModal.visible}}" bindtap="closeNote"></view>
+<view class="note-sheet" wx:if="{{noteModal.visible}}">
+  <view class="note-sheet-title">📝 行程备注</view>
+  <text class="note-sheet-activity">{{noteModal.activity}}</text>
+  <textarea class="note-sheet-input" value="{{noteModal.text}}" bindinput="onNoteInput"
+    placeholder="记一笔：停车、排队、必点菜、注意事项…" maxlength="200" auto-focus></textarea>
+  <view class="note-sheet-actions">
+    <view class="note-sheet-btn cancel" bindtap="closeNote" hover-class="hover-bg">取消</view>
+    <view class="note-sheet-btn confirm" bindtap="saveNote" hover-class="hover-bg">保存</view>
+  </view>
+</view>
+
+<!-- 骨架屏 -->
+<view class="route-skeleton" wx:if="{{loading}}">
+  <view class="skeleton-tabs"></view>
+  <view class="skeleton-cover"></view>
+  <view class="skeleton-card" wx:for="{{[1,2,3,4,5]}}" wx:key="*this">
+    <view class="skeleton-line skeleton-line-time"></view>
+    <view class="skeleton-line"></view>
+    <view class="skeleton-line skeleton-line-short"></view>
+  </view>
+</view>
+
+<!-- 空状态 -->
+<view class="route-empty" wx:if="{{!loading && !activeRoute}}">
+  <text class="empty-icon">🗺️</text>
+  <text class="empty-text">暂无路线数据</text>
+  <text class="empty-sub">攻略中可能未生成周末路线，请尝试刷新或查看报告</text>
+  <view class="btn btn-outline empty-action" bindtap="refreshRouteTap" hover-class="card-tap">
+    <text>🔄 刷新重试</text>
+  </view>
+</view>

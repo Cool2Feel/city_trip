@@ -1,0 +1,9 @@
+{
+  "desc": "周末城市游小程序sitemap配置",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

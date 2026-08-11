@@ -1,0 +1,132 @@
+<!-- pages/discover/discover.wxml -->
+<view class="discover-page">
+  <!-- 城市栏 -->
+  <view class="city-header">
+    <view class="city-header-left" bindtap="selectCity">
+      <text class="city-header-icon">📍</text>
+      <text class="city-header-name">{{currentCity ? currentCity.name : '选择城市'}}</text>
+      <text class="city-header-arrow">▸</text>
+    </view>
+    <view class="regenerate-btn" wx:if="{{isGenerated}}" bindtap="regenerate">
+      <text>🔄 重新生成</text>
+    </view>
+  </view>
+
+  <!-- 周末过期提示 -->
+  <view class="expired-banner" wx:if="{{isWeekendExpired}}" bindtap="refreshDiscover" hover-class="hover-bg">
+    <text class="expired-banner-icon">⚠️</text>
+    <text class="expired-banner-text">这是 {{report.overview.weekend}} 的攻略，可能已过时</text>
+    <text class="expired-banner-action">刷新最新 ›</text>
+  </view>
+
+  <!-- 重新生成中：调研工作流进度 -->
+  <view class="regenerating" wx:if="{{isRegenerating}}">
+    <view class="regen-card">
+      <view class="regen-head">
+        <text class="regen-spinner">⚙️</text>
+        <text class="regen-title">正在重新生成 {{currentCity.name}} 周末攻略</text>
+      </view>
+      <text class="regen-desc">多路并行调研本地演出、市集、美食、路线…</text>
+      <view class="regen-steps" wx:if="{{genSteps.length}}">
+        <view class="regen-step {{index == genSteps.length - 1 ? 'active' : 'done'}}"
+          wx:for="{{genSteps}}" wx:for-item="st" wx:key="step">
+          <view class="regen-step-no">{{st.step}}</view>
+          <view class="regen-step-body">
+            <text class="regen-step-name">{{st.name}}</text>
+            <text class="regen-step-detail" wx:if="{{st.detail}}">{{st.detail}}</text>
+          </view>
+          <text class="regen-step-status">{{index == genSteps.length - 1 ? '…' : '✓'}}</text>
+        </view>
+      </view>
+      <view class="regen-progress">{{genSteps.length}} / {{totalSteps}} 步完成</view>
+    </view>
+  </view>
+
+  <!-- 内容加载中骨架屏 -->
+  <view class="feed-skeleton" wx:elif="{{currentCity && loading && !isGenerated}}">
+    <view class="skeleton-hero"></view>
+    <view class="skeleton-card">
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line skeleton-line-short"></view>
+    </view>
+    <view class="skeleton-card">
+      <view class="skeleton-line skeleton-line-long"></view>
+      <view class="skeleton-line skeleton-line-short"></view>
+    </view>
+    <view class="skeleton-card">
+      <view class="skeleton-line"></view>
+      <view class="skeleton-line skeleton-line-short"></view>
+    </view>
+  </view>
+
+  <!-- 未生成状态 -->
+  <view class="not-generated" wx:elif="{{!isGenerated && !loading}}">
+    <view class="not-gen-card">
+      <text class="not-gen-icon">🚀</text>
+      <text class="not-gen-title">{{currentCity ? '准备生成攻略' : '请先选择城市'}}</text>
+      <text class="not-gen-desc" wx:if="{{currentCity}}">正在为您整理 {{currentCity.name}} 的本周末深度游玩建议</text>
+      <text class="not-gen-desc" wx:else>选择城市后即可生成周末攻略</text>
+      <view class="btn btn-primary not-gen-btn" bindtap="{{currentCity ? 'generateReport' : 'selectCity'}}">
+        <text>{{currentCity ? '⚡ 开始生成' : '📍 选择城市'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 已生成：内容流 -->
+  <view class="report-generated" wx:elif="{{isGenerated && report}}">
+    <!-- 顶部横幅：城市 + 周末 + 完整攻略入口 -->
+    <view class="feed-hero">
+      <view class="feed-hero-top">
+        <text class="feed-hero-title">{{currentCity.name}} 周末精选</text>
+        <view class="feed-hero-actions">
+          <view class="quick-nav-mini" bindtap="viewMap"><text>🗺️</text></view>
+          <view class="quick-nav-mini" bindtap="viewRoutes"><text>🛤️</text></view>
+        </view>
+      </view>
+      <text class="feed-hero-meta" wx:if="{{report.overview}}">{{report.overview.weekend}} · {{report.overview.weather}}</text>
+      <text class="feed-hero-sub">编辑精选 · 从 {{feeds.length}} 个方向挑出本周末必看 TOP 3</text>
+      <view class="btn btn-primary feed-hero-btn" bindtap="viewReport">
+        <text>📋 查看完整攻略</text>
+      </view>
+    </view>
+
+    <!-- 本周末亮点：主题精选卡 -->
+    <view class="card feed-highlights" wx:if="{{themePicks.length}}">
+      <view class="feed-section-title">✨ 本周末亮点</view>
+      <scroll-view class="theme-picks-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+        <view class="theme-pick" wx:for="{{themePicks}}" wx:key="category"
+          data-cat="{{item.category}}" bindtap="viewCategory" hover-class="hover-bg"
+          style="background: linear-gradient(135deg, {{item.color}} 0%, {{item.color}}cc 100%);">
+          <view class="theme-pick-top">
+            <text class="theme-pick-icon">{{item.icon}}</text>
+            <text class="theme-pick-label">{{item.label}}</text>
+          </view>
+          <text class="theme-pick-name">{{item.name}}</text>
+          <text class="theme-pick-meta" wx:if="{{item.meta || item.price}}">{{item.meta}}{{item.meta && item.price ? ' · ' : ''}}{{item.price}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 分类精选流 -->
+    <view class="feed-groups">
+      <view class="feed-group" wx:for="{{feeds}}" wx:key="category">
+        <view class="feed-group-header">
+          <text class="feed-group-name"><text style="color: {{item.color}}">{{item.icon}}</text> {{item.name}}</text>
+          <view class="feed-group-top3">TOP 3</view>
+          <view class="feed-group-more" data-cat="{{item.category}}" bindtap="viewCategory">
+            <text>全部</text><text class="feed-group-arrow">›</text>
+          </view>
+        </view>
+        <scroll-view class="feed-scroll" scroll-x enable-flex show-scrollbar="{{false}}">
+          <view class="feed-item" wx:for="{{item.items}}" wx:for-item="it" wx:key="name"
+            data-cat="{{item.category}}" bindtap="onActivityTap" hover-class="hover-bg">
+            <text class="feed-item-name">{{it.name}}</text>
+            <text class="feed-item-meta" wx:if="{{it.time || it.venue}}">{{it.time}}{{it.time && it.venue ? ' · ' : ''}}{{it.venue}}</text>
+            <text class="feed-item-meta" wx:elif="{{it.address}}">{{it.address}}</text>
+            <text class="feed-item-price" wx:if="{{it.price}}">{{it.price}}</text>
+          </view>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+</view>

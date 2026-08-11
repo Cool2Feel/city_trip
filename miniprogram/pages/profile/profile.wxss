@@ -1,0 +1,489 @@
+/* pages/profile/profile.wxss */
+.profile-page {
+  min-height: 100vh;
+  padding-bottom: 40rpx;
+}
+
+/* 用户头部 */
+.profile-header {
+  position: relative;
+  padding: 60rpx 32rpx 80rpx;
+  overflow: hidden;
+}
+
+.profile-header-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, var(--primary) 0%, #2196F3 100%);
+}
+
+.profile-header-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+}
+
+.profile-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(10px);
+  border: 3rpx solid rgba(255,255,255,0.3);
+}
+
+.profile-avatar-icon {
+  font-size: 56rpx;
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+}
+
+.login-btn {
+  background: rgba(255,255,255,0.25);
+  color: #fff;
+  padding: 12rpx 32rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+  border: 2rpx solid rgba(255,255,255,0.4);
+  white-space: nowrap;
+}
+
+/* chooseAvatar 头像按钮 */
+.profile-avatar-btn {
+  width: 120rpx;
+  height: 120rpx;
+  background: rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3rpx solid rgba(255,255,255,0.3);
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+}
+
+.profile-avatar-btn::after {
+  border: none;
+}
+
+/* 昵称输入 */
+.profile-nickname-input {
+  min-width: 240rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #fff;
+}
+
+.profile-nickname-ph {
+  color: rgba(255,255,255,0.7);
+  font-weight: 400;
+}
+
+.login-btn:active {
+  opacity: 0.8;
+}
+
+.login-btn.loading {
+  opacity: 0.6;
+}
+
+.share-btn {
+  width: 100%;
+  background: var(--primary);
+  color: #fff;
+  text-align: center;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  border: none;
+  line-height: normal;
+}
+
+.share-btn::after {
+  border: none;
+}
+
+.share-btn:active {
+  opacity: 0.85;
+}
+
+.profile-info {
+  flex: 1;
+}
+
+.profile-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #fff;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.profile-desc {
+  font-size: 24rpx;
+  color: rgba(255,255,255,0.8);
+}
+
+/* 数据统计 */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin: -40rpx 32rpx 0;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx 0;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  z-index: 2;
+}
+
+.stats-bar-item {
+  text-align: center;
+  flex: 1;
+}
+
+.stats-bar-value {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.stats-bar-label {
+  font-size: 22rpx;
+  color: var(--text-3);
+}
+
+.stats-bar-divider {
+  width: 1rpx;
+  height: 60rpx;
+  background: var(--border);
+}
+
+/* Section */
+.section {
+  padding: 0 32rpx;
+  margin-top: 32rpx;
+}
+
+.section-header {
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--text-1);
+}
+
+/* 收藏城市 */
+.fav-cities-scroll {
+  white-space: nowrap;
+}
+
+.fav-cities {
+  display: inline-flex;
+  gap: 16rpx;
+  padding-bottom: 8rpx;
+}
+
+.fav-city-card {
+  display: inline-block;
+  width: 260rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx 24rpx;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  vertical-align: top;
+}
+
+.fav-city-card:active {
+  transform: scale(0.97);
+}
+
+.fav-city-remove {
+  position: absolute;
+  top: 12rpx;
+  right: 12rpx;
+  width: 40rpx;
+  height: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-tag);
+  border-radius: 50%;
+  font-size: 20rpx;
+  color: var(--text-3);
+}
+
+.fav-city-remove:active {
+  background: var(--danger);
+  color: #fff;
+}
+
+.fav-city-name {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--text-1);
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.fav-city-desc {
+  font-size: 22rpx;
+  color: var(--text-3);
+  display: block;
+  margin-bottom: 4rpx;
+  white-space: normal;
+}
+
+.fav-city-province {
+  font-size: 20rpx;
+  color: var(--text-4);
+}
+
+/* 已保存报告 */
+.report-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.report-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: var(--shadow-sm);
+}
+
+.report-item:active {
+  background: var(--bg-page);
+}
+
+.report-item-info {
+  flex: 1;
+}
+
+.report-item-city {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text-1);
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.report-item-date {
+  font-size: 22rpx;
+  color: var(--text-3);
+}
+
+.report-item-date-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.report-item-expired {
+  font-size: 20rpx;
+  color: #d32f2f;
+  background: rgba(211, 47, 47, 0.08);
+  border: 1rpx solid rgba(211, 47, 47, 0.3);
+  border-radius: 8rpx;
+  padding: 2rpx 10rpx;
+}
+
+.report-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.report-item-size {
+  font-size: 22rpx;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.report-item-arrow {
+  font-size: 32rpx;
+  color: var(--text-3);
+}
+
+.report-item-del {
+  width: 44rpx;
+  height: 44rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(211,47,47,0.1);
+  color: var(--danger, #d32f2f);
+  border-radius: 50%;
+  font-size: 24rpx;
+}
+
+.report-item-del:active {
+  background: rgba(211,47,47,0.25);
+}
+
+.report-list-hint {
+  display: block;
+  font-size: 20rpx;
+  color: var(--text-3);
+  margin-top: 12rpx;
+  padding-left: 4rpx;
+}
+
+/* 功能菜单 */
+.menu-list {
+  background: #fff;
+  border-radius: 20rpx;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+  padding: 28rpx 24rpx;
+  border-bottom: 1rpx solid var(--border);
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-item:active {
+  background: var(--bg-page);
+}
+
+.menu-icon {
+  font-size: 36rpx;
+  width: 48rpx;
+  text-align: center;
+}
+
+.menu-info {
+  flex: 1;
+}
+
+.menu-name {
+  font-size: 30rpx;
+  font-weight: 500;
+  color: var(--text-1);
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.menu-desc {
+  font-size: 22rpx;
+  color: var(--text-3);
+}
+
+.menu-arrow {
+  font-size: 32rpx;
+  color: var(--text-3);
+}
+
+/* 清除缓存 */
+.clear-cache-btn {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 28rpx;
+  text-align: center;
+  font-size: 28rpx;
+  color: var(--danger);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+}
+
+.clear-cache-btn:active {
+  background: rgba(211,47,47,0.05);
+}
+
+/* 版本信息 */
+.version-info {
+  text-align: center;
+  padding: 40rpx 32rpx;
+}
+
+.version-info text {
+  display: block;
+  font-size: 22rpx;
+  color: var(--text-4);
+  line-height: 1.8;
+}
+
+/* 我的足迹（A5）*/
+.footprint-section {
+  padding: 0 32rpx;
+  margin-top: 32rpx;
+}
+
+.footprint-grid {
+  display: flex;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.footprint-item {
+  flex: 1;
+  text-align: center;
+  position: relative;
+}
+
+.footprint-item::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 12rpx;
+  bottom: 12rpx;
+  width: 1rpx;
+  background: var(--border);
+}
+
+.footprint-item:last-child::after {
+  display: none;
+}
+
+.footprint-value {
+  display: block;
+  font-size: 40rpx;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6rpx;
+}
+
+.footprint-label {
+  font-size: 20rpx;
+  color: var(--text-3);
+}
+
+.footprint-tip {
+  display: block;
+  font-size: 20rpx;
+  color: var(--text-4);
+  margin-top: 16rpx;
+  line-height: 1.5;
+}
