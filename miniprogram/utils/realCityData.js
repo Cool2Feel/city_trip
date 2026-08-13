@@ -8,7 +8,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.105Z",
+      "bakedAt": "2026-08-13T19:02:48.913Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多阵雨",
@@ -902,7 +902,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.106Z",
+      "bakedAt": "2026-08-13T19:02:48.913Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热干燥",
@@ -1770,7 +1770,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.106Z",
+      "bakedAt": "2026-08-13T19:02:48.913Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热雷阵雨",
@@ -2831,7 +2831,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.106Z",
+      "bakedAt": "2026-08-13T19:02:48.913Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热",
@@ -3847,7 +3847,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.106Z",
+      "bakedAt": "2026-08-13T19:02:48.913Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多雾",
@@ -4898,7 +4898,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.106Z",
+      "bakedAt": "2026-08-13T19:02:48.914Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多雷阵雨",
@@ -5922,7 +5922,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.106Z",
+      "bakedAt": "2026-08-13T19:02:48.914Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多阵雨",
@@ -6816,7 +6816,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.106Z",
+      "bakedAt": "2026-08-13T19:02:48.914Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多台风",
@@ -7890,7 +7890,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.107Z",
+      "bakedAt": "2026-08-13T19:02:48.914Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多雷阵雨",
@@ -8760,7 +8760,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.107Z",
+      "bakedAt": "2026-08-13T19:02:48.914Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多海雾",
@@ -9630,7 +9630,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.107Z",
+      "bakedAt": "2026-08-13T19:02:48.915Z",
       "authSource": "bundled",
       "overview": {
         "weather": "多云多雨",
@@ -10493,7 +10493,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.108Z",
+      "bakedAt": "2026-08-13T19:02:48.915Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多海风",
@@ -11387,7 +11387,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.108Z",
+      "bakedAt": "2026-08-13T19:02:48.915Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多干热",
@@ -12262,7 +12262,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.108Z",
+      "bakedAt": "2026-08-13T19:02:48.915Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热干燥",
@@ -13144,7 +13144,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.108Z",
+      "bakedAt": "2026-08-13T19:02:48.915Z",
       "authSource": "bundled",
       "overview": {
         "weather": "多云多阵雨",
@@ -14019,7 +14019,7 @@ const REAL_REPORTS = {
       "totalCalls": 12,
       "reportSize": "24-30KB",
       "aiGenerated": true,
-      "bakedAt": "2026-08-12T19:01:58.108Z",
+      "bakedAt": "2026-08-13T19:02:48.915Z",
       "authSource": "bundled",
       "overview": {
         "weather": "晴热多阵雨",
