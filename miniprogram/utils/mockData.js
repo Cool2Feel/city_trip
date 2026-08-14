@@ -10,6 +10,31 @@ try { REAL = require('./realCityData.js') } catch (e) { REAL = { REAL_REPORTS: {
 let CITYMAP = { REAL_REPORTS_CITYMAP: {} }
 try { CITYMAP = require('./realCityData_citymap_pilot.js') } catch (e) { CITYMAP = { REAL_REPORTS_CITYMAP: {} } }
 
+// P1：置信度加权合并（与 build_citydata.js 共用同一套逻辑，保证线上烘焙与离线兜底一致）
+const { mergeCity } = require('./merge_citydata.js')
+
+// 取合并后的单城数据：手写精校(hand) > 阶段2 REAL(bundled/authoritative) 为基，
+// 再与 citymap 第三方抓取做 POI 级加权合并（同名取高置信坐标 + 冲突检测 + 互补追加）。
+// 仅一路存在时直接返回该路。
+function getMergedCity(cityCode) {
+  const cm = CITYMAP.REAL_REPORTS_CITYMAP && CITYMAP.REAL_REPORTS_CITYMAP[cityCode]
+  const realCity = REAL.REAL_REPORTS && REAL.REAL_REPORTS[cityCode]
+  const hand = REPORTS[cityCode]
+  // 基：优先手写精校（视为 hand 高置信），其次 REAL
+  let base = null
+  if (hand) base = withAuthSource(hand, 'hand')
+  else if (realCity) base = realCity
+  if (base && cm) return mergeCity(base, cm)
+  if (cm) return cm
+  if (base) return base
+  return null
+}
+// 手写报告未带 authSource，合并时视为 hand（高置信 0.9），仅用于合并判定，不改原对象
+function withAuthSource(city, auth) {
+  if (city.report && city.report.authSource) return city
+  return { report: Object.assign({}, city.report, { authSource: auth }), places: city.places }
+}
+
 const CITIES = [
   {
     code: 'guangzhou',
@@ -1182,11 +1207,10 @@ function generateReport(cityCode, opts = {}) {
   const weekendOffset = opts.weekendOffset || 0
   const preference = opts.preference || ''
 
-  // 试点：citymap 抓取烘焙数据优先（仅试点城市命中），再回退手写报告（广深蓉）/阶段2 bundled
-  const citymapData = CITYMAP.REAL_REPORTS_CITYMAP && CITYMAP.REAL_REPORTS_CITYMAP[cityCode]
-  const handData = citymapData || REPORTS[cityCode] || (REAL.REAL_REPORTS && REAL.REAL_REPORTS[cityCode])
-  if (handData) {
-    const report = refreshStaticReportWeekend(handData.report, weekendOffset)
+  // P1：置信度加权合并（手写精校 > REAL 为基，叠加 citymap 抓取；同名取高置信坐标 + 冲突检测）
+  const merged = getMergedCity(cityCode)
+  if (merged) {
+    const report = refreshStaticReportWeekend(merged.report, weekendOffset)
     return applyPreferenceToReport(report, preference, weekendOffset)
   }
 
@@ -1500,14 +1524,9 @@ function applyPreferenceToReport(report, preference, weekendOffset) {
 
 // 生成地图标记点
 function generatePlaces(cityCode) {
-  if (CITYMAP.REAL_REPORTS_CITYMAP && CITYMAP.REAL_REPORTS_CITYMAP[cityCode]) {
-    return CITYMAP.REAL_REPORTS_CITYMAP[cityCode].places
-  }
-  if (REPORTS[cityCode]) {
-    return REPORTS[cityCode].places
-  }
-  if (REAL.REAL_REPORTS && REAL.REAL_REPORTS[cityCode]) {
-    return REAL.REAL_REPORTS[cityCode].places
+  const merged = getMergedCity(cityCode)
+  if (merged) {
+    return merged.places
   }
 
   const city = getCity(cityCode)

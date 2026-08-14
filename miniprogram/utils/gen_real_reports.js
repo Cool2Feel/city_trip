@@ -8,6 +8,7 @@
 /* eslint-disable */
 const fs = require('fs')
 const path = require('path')
+const { fetchWithRetry, createAdapter } = require('./scraper_core.js')
 
 // ---------- 构建期权威源烘焙（选项 C：不部署 server，key 仅走环境变量，不进包） ----------
 // 配置 TENCENT_MAP_KEY / QWEATHER_KEY 后重跑本脚本，会把真实坐标(GCJ-02)与周末天气烤进 realCityData.js；
@@ -32,16 +33,9 @@ function limiter(concurrency) {
 }
 const geoLimit = limiter(6)
 
-async function fetchJson(url, timeoutMs = 4000) {
-  const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
-  try {
-    const res = await fetch(url, { signal: ctrl.signal })
-    if (!res.ok) return null
-    return await res.json()
-  } catch (e) { return null }
-  finally { clearTimeout(timer) }
-}
+// 平台适配器：腾讯地图 / 和风天气，各自独立超时·重试·失败隔离（单平台抖动不中断整城烘焙）
+const tencentAdapter = createAdapter({ name: 'tencent-map', coordSystem: 'gcj-02', timeoutMs: 15000, retries: 3 })
+const qweatherAdapter = createAdapter({ name: 'qweather', coordSystem: 'gcj-02', timeoutMs: 15000, retries: 3 })
 
 // 腾讯位置服务地理编码（GCJ-02，与微信 map 组件一致）。无 key 或失败则回落 fallback。
 const _geoCache = new Map()
@@ -53,7 +47,7 @@ async function geocode(name, region, fallback) {
     try {
       const url = 'https://apis.map.qq.com/ws/geocoder/v1/?address=' +
         encodeURIComponent(name) + '&region=' + encodeURIComponent(region) + '&key=' + TENCENT_MAP_KEY
-      const r = await fetchJson(url)
+      const r = await tencentAdapter.fetch(url)
       const loc = r && r.status === 0 && r.result && r.result.location
       if (!loc) { _geoCache.set(key, fallback); return fallback }
       // 跨城误匹配防护：腾讯可能把「南京路步行街」解析成「南京市」等，
@@ -73,11 +67,11 @@ async function fetchWeather(cityName, fallback) {
   if (!QWEATHER_KEY || !cityName) return fallback
   if (_wxCache.has(cityName)) return _wxCache.get(cityName)
   try {
-    const geo = await fetchJson('https://geoapi.qweather.com/v2/city/lookup?location=' +
+    const geo = await qweatherAdapter.fetch('https://geoapi.qweather.com/v2/city/lookup?location=' +
       encodeURIComponent(cityName) + '&key=' + QWEATHER_KEY)
     const loc = geo && geo.code === '200' && geo.location && geo.location[0]
     if (!loc) { _wxCache.set(cityName, fallback); return fallback }
-    const w = await fetchJson('https://devapi.qweather.com/v7/weather/3d?location=' +
+    const w = await qweatherAdapter.fetch('https://devapi.qweather.com/v7/weather/3d?location=' +
       loc.id + '&key=' + QWEATHER_KEY)
     if (!w || w.code !== '200' || !w.daily || !w.daily[0]) { _wxCache.set(cityName, fallback); return fallback }
     const d = w.daily[0]
@@ -277,6 +271,11 @@ async function buildCity(spec) {
     cityCode: spec.code, cityName: cityName, generatedAt: '2026-08-10',
     totalCalls: 12, reportSize: '24-30KB', aiGenerated: true,
     bakedAt: new Date().toISOString(), authSource: authSource,
+    fetchedAt: new Date().toISOString(),
+    coordSystem: 'gcj-02',
+    platform: AUTHORITATIVE ? 'tencent-qweather' : 'bundled',
+    sourceWindow: null,
+    isExpired: false,
     overview: overview, sections: sections, qualityCheck: qualityCheck,
     sources: sources, workflow: workflow
   }

@@ -1,27 +1,38 @@
 // utils/gen_citymap_report.js
-// 试点：从第三方静态站 citymap.348349.xyz 的地图页抓取 TRIP_DATA（高德 GCJ-02 坐标），
+// 从第三方静态站 citymap.348349.xyz 的地图页抓取 TRIP_DATA（高德 GCJ-02 坐标），
 // 映射成与 realCityData.js 完全一致的 schema（report.sections + places），烤进包。
 //
 // 设计要点（与 C 方案一致：构建期烘焙，运行时零后端零 key）：
 //  - 坐标系已是 GCJ-02（高德），与微信 <map> 组件一致，无需转换。
 //  - 数据带 date_range（快照日期），烤进 report.sourceDate 并展示，避免展示过期活动误导。
 //  - authSource 设为 'citymap'，区别于 bundled/authoritative；report.wxml 芯片单独标「博查版参考」。
-//  - 仅试点上海/北京，不覆盖现有 16 城数据。验证通过后再铺开。
+//  - 全量城市：先抓首页拿到各城地图页链接，按小程序已知城市名做前缀匹配，映射到城市 code；
+//    仅覆盖小程序已知的城市（19 城），其余保持 bundled。单城抓取失败仅告警、不中断整轮。
 //
 // 运行：node utils/gen_citymap_report.js  ->  生成 utils/realCityData_citymap_pilot.js
 
 /* eslint-disable */
 const fs = require('fs')
 const path = require('path')
+const { fetchWithRetry, limiter, parseSourceWindow, computeIsExpired, createAdapter } = require('./scraper_core.js')
 
 const BASE = 'https://citymap.348349.xyz/'
-// 试点城市：code -> { name, 地图页文件名 }
-const PILOT = [
+
+// 小程序已知城市：中文名 -> code（仅这些会被 citymap 数据覆盖，其余保持 bundled）
+const CITY_CODES = {
+  '北京': 'beijing', '上海': 'shanghai', '广州': 'guangzhou', '深圳': 'shenzhen',
+  '成都': 'chengdu', '重庆': 'chongqing', '杭州': 'hangzhou', '西安': 'xian',
+  '南京': 'nanjing', '厦门': 'xiamen', '长沙': 'changsha', '武汉': 'wuhan',
+  '天津': 'tianjin', '苏州': 'suzhou', '青岛': 'qingdao', '昆明': 'kunming',
+  '大连': 'dalian', '桂林': 'guilin', '郑州': 'zhengzhou'
+}
+// 兜底：即使首页抓取失败，也尝试这两个已知文件名（日期可能过期，但优于退化为空）
+const FALLBACK_FILES = [
   { code: 'shanghai', name: '上海', file: '上海7月4-5日地图_博查版.html' },
-  { code: 'beijing', name: '北京', file: '北京中秋地图_博查版.html' },
+  { code: 'beijing', name: '北京', file: '北京中秋地图_博查版.html' }
 ]
 
-// TRIP_DATA.type 编码 -> 小程序 category（与现有生成器保持一致）
+// TRIP_DATA.type 编码 -> 小程序 category
 // 5=5A景区 U=博物馆 M=集市 S=球赛 C=演唱会 F=美食街 H=喜茶 W=路线节点 D=地铁 L=购物中心 其余=景点
 function typeToCategory(t) {
   switch (t) {
@@ -39,7 +50,6 @@ function typeToCategory(t) {
   }
 }
 
-// 活动分组：concert(C)/market(M)/sport(S)/museum(U)/scenic(5A=5)
 function activityGroupFor(p) {
   if (p.type === 'C') return 'concert'
   if (p.type === 'M') return 'market'
@@ -50,28 +60,10 @@ function activityGroupFor(p) {
 }
 const GROUP_NAME = { concert: '演唱会/演出', market: '集市/夜市', sport: '球赛', museum: '博物馆/展览', scenic: '5A景区' }
 
-function limiter(concurrency) {
-  let active = 0
-  const queue = []
-  const pump = () => {
-    if (active >= concurrency || queue.length === 0) return
-    active++
-    const { fn, resolve, reject } = queue.shift()
-    Promise.resolve().then(fn).then(resolve, reject).finally(() => { active--; pump() })
-  }
-  return fn => new Promise((resolve, reject) => { queue.push({ fn, resolve, reject }); pump() })
-}
 const fetchLimit = limiter(3)
 
-async function fetchText(url, timeoutMs = 20000) {
-  const ctrl = new AbortController()
-  const t = setTimeout(() => ctrl.abort(), timeoutMs)
-  try {
-    const r = await fetch(url, { signal: ctrl.signal })
-    if (!r.ok) return null
-    return await r.text()
-  } catch (e) { return null } finally { clearTimeout(t) }
-}
+// 平台适配器：citymap 为静态 HTML（GCJ-02 坐标），统一超时/重试/失败隔离
+const citymapAdapter = createAdapter({ name: 'citymap', coordSystem: 'gcj-02', timeoutMs: 20000, retries: 3 })
 
 function parseTrip(html) {
   const start = html.indexOf('TRIP_DATA = {')
@@ -88,31 +80,69 @@ function parseTrip(html) {
   try { return eval('(' + html.slice(start + 'TRIP_DATA = '.length, end) + ')') } catch (e) { return null }
 }
 
-// 从 section 字段提取路线分组（形如 "5.1 路线 A:衡复风貌区文艺线(经典顶流)⭐"）
 function parseRouteSection(section) {
   const m = (section || '').match(/路线\s*([A-C])\s*[:：]\s*([^(（]+)/)
   if (m) return { id: m[1], name: m[2].trim() }
   return null
 }
 
+// 从首页抓取所有「地图_博查版.html」链接
+async function fetchIndexLinks() {
+  const html = await fetchWithRetry(BASE)
+  if (!html) return []
+  const out = []
+  const re = /href="([^"]*地图_博查版\.html)"/g
+  let m
+  while ((m = re.exec(html))) out.push(m[1])
+  return out
+}
+
+// 由文件名推断城市中文名（取「_博查版」前、开头的连续中文）
+function cityFromFilename(href) {
+  let f = decodeURIComponent(href.split('/').pop())
+  f = f.replace(/\.html$/, '')
+  const base = f.split('_博查版')[0]
+  const leading = (base.match(/^[一-鿿]+/) || [''])[0]
+  return leading
+}
+
+function matchCity(leading) {
+  const names = Object.keys(CITY_CODES).sort((a, b) => b.length - a.length)
+  for (const n of names) if (leading.startsWith(n)) return CITY_CODES[n]
+  return null
+}
+
+function resolveUrl(href) {
+  if (/^https?:\/\//.test(href)) return href
+  return BASE + href
+}
+
 function buildCity(data, meta) {
+  const win = parseSourceWindow(data.date_range)
+  const isExpired = computeIsExpired(win)
+  const expiredCats = ['concert', 'market', 'sport']
   const places = (data.places || [])
     .filter(p => p.lat && p.lng && p.name)
-    .map((p, i) => ({
-      id: meta.code + '-cm-' + i,
-      name: p.name,
-      lat: p.lat,
-      lng: p.lng,
-      category: typeToCategory(p.type),
-      price: '',
-      rating: null,
-      address: p.address || '',
-      note: p.note || '',
-      desc: p.note || '',
-      sourceDate: data.date_range || ''
-    }))
+    .map((p, i) => {
+      const category = typeToCategory(p.type)
+      return {
+        id: meta.code + '-cm-' + i,
+        name: p.name,
+        lat: p.lat,
+        lng: p.lng,
+        category: category,
+        price: '',
+        rating: null,
+        address: p.address || '',
+        note: p.note || '',
+        desc: p.note || '',
+        sourceDate: data.date_range || '',
+        coordSystem: 'gcj-02',
+        // 时效敏感类目在活动窗口结束后标记为过期（runtime 降级隐藏）
+        expired: expiredCats.includes(category) && isExpired
+      }
+    })
 
-  // 活动分组
   const groups = {}
   for (const p of (data.places || [])) {
     const g = activityGroupFor(p)
@@ -124,7 +154,6 @@ function buildCity(data, meta) {
     .filter(g => groups[g] && groups[g].length)
     .map(g => ({ category: g, name: GROUP_NAME[g], items: groups[g] }))
 
-  // 美食街 / 喜茶 / 地铁 / 购物中心
   const foodStreets = (data.places || []).filter(p => p.type === 'F')
     .map(p => ({ name: p.name, address: p.address || '', feature: p.note || '', metro: '地铁直达', rating: null, source: '博查版调研' }))
   const teaItems = (data.places || []).filter(p => p.type === 'H')
@@ -132,7 +161,6 @@ function buildCity(data, meta) {
   const metroStations = (data.places || []).filter(p => p.type === 'D')
     .map(p => ({ name: p.name, line: p.section || '', exit: '', desc: p.note || '' }))
 
-  // 路线：按 section 里的 "路线 A:xxx" 分组
   const routeMap = {}
   for (const p of (data.places || [])) {
     if (p.type !== 'W') continue
@@ -143,7 +171,6 @@ function buildCity(data, meta) {
   }
   const routes = Object.values(routeMap)
 
-  // 统计
   const byCat = c => places.filter(p => p.category === c)
   const overview = {
     weather: '',
@@ -243,6 +270,11 @@ function buildCity(data, meta) {
     bakedAt: new Date().toISOString(),
     authSource: 'citymap',
     sourceDate: data.date_range || '',
+    fetchedAt: meta.fetchedAt,
+    coordSystem: 'gcj-02',
+    platform: 'citymap',
+    sourceWindow: win,
+    isExpired: isExpired,
     overview: overview,
     sections: sections,
     qualityCheck: { overallScore: 0, dimensions: [] },
@@ -253,26 +285,44 @@ function buildCity(data, meta) {
 }
 
 async function main() {
-  const limit = fetchLimit
-  const entries = await Promise.all(PILOT.map(m => limit(async () => {
-    const url = BASE + encodeURIComponent(m.file)
-    console.log('[fetch]', m.name, url)
-    const html = await fetchText(url)
-    if (!html) { console.log('  ✗ 抓取失败:', m.name); return [m.code, null] }
+  const fetchedAt = new Date().toISOString()
+  const byCode = {}
+  const indexLinks = await fetchIndexLinks()
+  console.log('[index] 首页地图页链接:', indexLinks.length)
+  for (const href of indexLinks) {
+    const code = matchCity(cityFromFilename(href))
+    if (code && !byCode[code]) byCode[code] = resolveUrl(href)
+  }
+  // 兜底：确保已知的两城即使首页解析失败也在
+  for (const f of FALLBACK_FILES) {
+    if (!byCode[f.code]) byCode[f.code] = resolveUrl(BASE + encodeURIComponent(f.file))
+  }
+  const discovered = Object.keys(byCode)
+  const missing = Object.values(CITY_CODES).filter(c => !discovered.includes(c))
+  if (missing.length) console.log('[index] 未在 citymap 找到匹配的城市(保持 bundled):', missing.join(', '))
+
+  const entries = await Promise.all(discovered.map(code => fetchLimit(async () => {
+    const url = byCode[code]
+    const name = Object.keys(CITY_CODES).find(n => CITY_CODES[n] === code)
+    console.log('[fetch]', name, url)
+    const html = await citymapAdapter.fetch(url)
+    if (!html) { console.log('  ✗ 抓取失败:', name); return [code, null] }
     const data = parseTrip(html)
-    if (!data) { console.log('  ✗ 解析失败(无 TRIP_DATA):', m.name); return [m.code, null] }
-    const built = buildCity(data, m)
-    console.log('  ✓', m.name, 'places=', built.places.length, 'routes=', built.report.sections.find(s => s.type === 'routes').routes.length, 'date=', data.date_range)
-    return [m.code, built]
+    if (!data) { console.log('  ✗ 解析失败(无 TRIP_DATA):', name); return [code, null] }
+    const built = buildCity(data, { code, name, fetchedAt })
+    const rs = built.report.sections.find(s => s.type === 'routes')
+    console.log('  ✓', name, 'places=', built.places.length, 'routes=', rs ? rs.routes.length : 0, 'date=', data.date_range)
+    return [code, built]
   })))
+
   const out = {}
   entries.forEach(([code, v]) => { if (v) out[code] = v })
-  const content = '// 试点烘焙数据（citymap.348349.xyz 抓取），与 realCityData.js schema 完全一致。\n' +
+  const content = '// 全量烘焙数据（citymap.348349.xyz 抓取），与 realCityData.js schema 完全一致。\n' +
     '// authSource=citymap；坐标 GCJ-02（高德），与微信 map 一致。数据带快照日期，仅供参考。\n' +
     'const REAL_REPORTS_CITYMAP = ' + JSON.stringify(out, null, 2) + ';\n\nmodule.exports = { REAL_REPORTS_CITYMAP };\n'
   const target = path.join(__dirname, 'realCityData_citymap_pilot.js')
   fs.writeFileSync(target, content, 'utf8')
-  console.log('[gen_citymap_report] 已生成', Object.keys(out).length, '座试点城市 ->', target)
+  console.log('[gen_citymap_report] 已生成', Object.keys(out).length, '座城市(citymap) ->', target)
 }
 
 main().catch(e => { console.error('[gen_citymap_report] 失败:', e); process.exit(1) })

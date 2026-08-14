@@ -426,7 +426,7 @@ function request(options) {
       }
 
       wx.request({
-        url: CONFIG.baseUrl + options.path,
+        url: options.url || CONFIG.baseUrl + options.path,
         method: options.method || 'GET',
         data: options.data || {},
         timeout: options.timeout || CONFIG.timeout,
@@ -655,6 +655,61 @@ async function _backgroundRefresh(cacheKey, apiFn, cloudFn, mockFn, ttl, type, o
   }
 }
 
+// ===== Remote Bake (GitHub Pages, 每天 Actions 自动烘焙) =====
+// 数据地址：https://cool2feel.github.io/city_trip/cityData.json
+// 优先级：远程烘焙数据 > 本地打包数据（mockData）。远程拉取/解析/校验失败均静默回落本地。
+const BAKE_URL = 'https://cool2feel.github.io/city_trip/cityData.json'
+const REMOTE_TTL = 30 * 60 * 1000 // 30 分钟内复用，避免每次重复下载 ~1MB
+let _remoteBake = null
+let _remoteLoading = null
+let _remoteLoadedAt = 0
+
+async function _loadRemoteBake() {
+  const now = Date.now()
+  if (_remoteBake && now - _remoteLoadedAt < REMOTE_TTL) return _remoteBake
+  if (_remoteLoading) return _remoteLoading
+  _remoteLoading = (async () => {
+    try {
+      const data = await request({ url: BAKE_URL, method: 'GET' })
+      const raw = (typeof data === 'string') ? JSON.parse(data) : data
+      if (!raw || typeof raw !== 'object') throw new Error('响应不是 JSON 对象')
+      const ok = {}
+      let skipped = 0
+      for (const code of Object.keys(raw)) {
+        const r = raw[code]
+        if (!r || !r.report || !r.places) { skipped++; continue }
+        if (!validateReport(r.report).ok || !validatePlaces(r.places).ok) { skipped++; continue }
+        ok[code] = r
+      }
+      if (Object.keys(ok).length) {
+        _remoteBake = ok
+        _remoteLoadedAt = Date.now()
+        console.log(`[api] 远程烘焙数据已加载：${Object.keys(ok).length} 城（跳过 ${skipped} 无效项）`)
+      } else {
+        console.warn('[api] 远程烘焙数据为空或全部校验失败，保持本地兜底')
+      }
+    } catch (e) {
+      console.warn('[api] 远程烘焙数据拉取失败，回落本地打包数据：', e.message)
+    }
+    _remoteLoading = null
+    return _remoteBake
+  })()
+  return _remoteLoading
+}
+
+async function _remoteReport(cityCode) {
+  const all = await _loadRemoteBake()
+  return all && all[cityCode] ? all[cityCode].report : null
+}
+
+async function _remotePlaces(cityCode) {
+  const all = await _loadRemoteBake()
+  return all && all[cityCode] ? all[cityCode].places : null
+}
+
+// 小程序启动即预热远程烘焙数据（失败静默回落本地）
+_loadRemoteBake().catch(() => {})
+
 // ===== API Methods =====
 
 /**
@@ -702,6 +757,11 @@ async function getHotCities(forceRefresh = false) {
 async function getReport(cityCode, forceRefresh = false, opts = {}) {
   const weekendOffset = opts.weekendOffset || 0
   const preference = opts.preference || ''
+  // 优先：远程烘焙数据（GitHub Pages，每天 Actions 自动刷新；失败/无则返回 null 回落本地）
+  const remote = await _remoteReport(cityCode)
+  if (remote) {
+    return { data: remote, source: 'remote', stale: false, fetchedAt: Date.now() }
+  }
   const variant = `_w${weekendOffset}${preference ? '_p' + preference : ''}`
   return fetchWithFallback(
     _vkey(`report_${cityCode}${variant}`),
@@ -716,6 +776,11 @@ async function getReport(cityCode, forceRefresh = false, opts = {}) {
  * Get map places
  */
 async function getPlaces(cityCode, forceRefresh = false) {
+  // 优先：远程烘焙数据
+  const remote = await _remotePlaces(cityCode)
+  if (remote) {
+    return { data: remote, source: 'remote', stale: false, fetchedAt: Date.now() }
+  }
   return fetchWithFallback(
     _vkey(`places_${cityCode}`),
     () => request({ path: `/places/${cityCode}` }),

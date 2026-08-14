@@ -1,95 +1,68 @@
-// 烘焙数据校验闸门：被 .github/workflows/bake.yml 调用。
-// 发现无效数据（坐标越界 / 缺字段 / authSource 非法）则 exit(1)，
-// 使工作流步骤失败 —— 不提交、不发布脏数据，保留上一版可用数据。
+// utils/validate_bake.js
+// 数据有效性闸门：对最终对外发布的合并产物（bake-dist/cityData.json）逐城校验。
+// 坐标越界 / 缺字段 / authSource 非法 -> exit(1) 阻断发布，保留上一版可用数据。
+// 本地无 bake-dist 时退化为校验源文件（realCityData.js + realCityData_citymap_pilot.js）。
+// 注意：本脚本在「合并之后、发布之前」运行。
+const fs = require('fs')
 const path = require('path')
 
-const errors = []
-const warns = []
-let fail = 0
-
-function load(file) {
-  try {
-    return require(path.join(__dirname, file))
-  } catch (e) {
-    errors.push(`加载失败 ${file}: ${e.message}`)
-    fail++
-    return null
-  }
+function loadMerged() {
+  const p = path.join(__dirname, '..', '..', 'bake-dist', 'cityData.json')
+  if (fs.existsSync(p)) return { src: 'bake-dist/cityData.json', data: JSON.parse(fs.readFileSync(p, 'utf8')) }
+  const a = require('./realCityData_citymap_pilot.js').REAL_REPORTS_CITYMAP
+  const b = require('./realCityData.js').REAL_REPORTS
+  return { src: '源文件(退化模式)', data: Object.assign({}, b, a) }
 }
 
-function checkCity(code, data) {
-  if (!data || !data.report || !Array.isArray(data.places)) {
-    errors.push(`${code}: 缺 report 或 places`)
-    fail++
-    return
+const { src, data } = loadMerged()
+const ALLOWED = ['bundled', 'authoritative', 'citymap', 'merged', 'osm']
+const LAT_MIN = 18, LAT_MAX = 53.6, LNG_MIN = 73, LNG_MAX = 135
+// P2 时效 SLA：抓取时间距现在超过该天数即告警（数据可能已陈旧）。可用环境变量覆盖。
+const MAX_STALE_DAYS = Number(process.env.MAX_STALE_DAYS || 7)
+const nowMs = Date.now()
+const DAY = 86400000
+let errors = 0, warns = 0
+const cities = Object.keys(data)
+for (const code of cities) {
+  const { report, places } = data[code]
+  const tag = '[' + code + ']'
+  if (!report) { console.error(tag + ' 缺失 report'); errors++; continue }
+  if (!ALLOWED.includes(report.authSource)) { console.error(tag + ' authSource 非法: ' + report.authSource); errors++ }
+  // P2 坐标系 SLA：落库坐标必须已归一化为规范系 GCJ-02（大小写不敏感）
+  const repCs = String(report.coordSystem || '').toUpperCase().replace('-', '')
+  if (repCs !== 'GCJ02' && repCs !== '') {
+    console.error(tag + ' 坐标系非法(必须为 GCJ-02，实际 ' + report.coordSystem + ')'); errors++
   }
-  const { report, places } = data
-
-  // authSource 必须是已知来源
-  const okAuth = ['bundled', 'authoritative', 'citymap'].includes(report.authSource)
-  if (!okAuth) {
-    errors.push(`${code}: authSource 非法=${report.authSource}`)
-    fail++
-  }
-
-  // 坐标检查：跳过多媒体/非地点节点（mappable:false），其余必须有合法 GCJ-02 坐标
-  let missing = 0
+  if (!places || !places.length) { console.error(tag + ' places 为空'); errors++; continue }
+  let miss = 0, conflictCnt = 0, badCs = 0
   for (const p of places) {
-    if (p.mappable === false) continue
-    if (!p.name) {
-      errors.push(`${code}: POI 缺 name`)
-      fail++
+    if (p._coordConflict) conflictCnt++
+    // P2 坐标系 SLA：每个 POI 也必须是 GCJ-02
+    const pcs = String(p.coordSystem || '').toUpperCase().replace('-', '')
+    if (pcs && pcs !== 'GCJ02') { console.error(tag + ' POI 坐标系未归一化: ' + p.name + ' (' + p.coordSystem + ')'); errors++; badCs++ }
+    if (!p.name) { console.error(tag + ' POI 缺 name'); errors++ }
+    const lat = Number(p.lat), lng = Number(p.lng)
+    if (!p.lat || !p.lng || isNaN(lat) || isNaN(lng)) { miss++; errors++ }
+    else if (lat < LAT_MIN || lat > LAT_MAX || lng < LNG_MIN || lng > LNG_MAX) {
+      console.error(tag + ' 坐标越界: ' + p.name + ' (' + lat + ',' + lng + ')'); errors++
     }
-    const lat = Number(p.lat)
-    const lng = Number(p.lng)
-    if (!isFinite(lat) || !isFinite(lng)) {
-      missing++
-      continue
-    }
-    // 中国境内坐标范围
-    if (lat < 18 || lat > 53.6 || lng < 73 || lng > 135) {
-      errors.push(`${code}: 坐标越界 ${p.name || '?'} (${lat}, ${lng})`)
-      fail++
-    }
+    if (!p.category) { console.error(tag + ' POI 缺 category: ' + p.name); errors++ }
   }
-  if (missing > 0) {
-    errors.push(`${code}: ${missing} 个 POI 缺坐标（非 mappable:false）`)
-    fail++
-  }
-
-  // routes 段：存在则校验结构，缺失仅告警（地图折线功能降级，但不算脏数据）
-  const rs = (report.sections || []).find((s) => s.type === 'routes')
-  if (rs) {
-    if (!Array.isArray(rs.routes) || rs.routes.length === 0) warns.push(`${code}: routes 段为空`)
+  if (miss) console.error(tag + ' ' + miss + ' 个 POI 缺坐标')
+  if (badCs) console.error(tag + ' ' + badCs + ' 个 POI 坐标系未归一化')
+  if (conflictCnt) console.warn(tag + ' ⚠ ' + conflictCnt + ' 个 POI 存在坐标冲突(已取高置信来源)，建议人工复核'); warns++
+  // P2 时效 SLA：抓取时间陈旧告警
+  const f = report.fetchedAt || report.bakedAt
+  if (f) {
+    const age = (nowMs - new Date(f).getTime()) / DAY
+    if (age > MAX_STALE_DAYS) { console.warn(tag + ' ⚠ 时效 SLA 告警：数据集已 ' + age.toFixed(1) + ' 天未刷新（> ' + MAX_STALE_DAYS + ' 天），runtime 可能展示陈旧数据'); warns++ }
   } else {
-    warns.push(`${code}: 无 routes 段（地图折线将不可用）`)
+    console.warn(tag + ' ⚠ 缺失 fetchedAt/bakedAt，无法判断时效'); warns++
   }
+  const rs = (report.sections || []).find(s => s.type === 'routes')
+  if (!rs || !rs.routes || !rs.routes.length) { console.warn(tag + ' ⚠ 无路线(warn)'); warns++ }
+  if (report.isExpired) { console.warn(tag + ' ⚠ 数据已过期(活动窗口已结束)，runtime 将降级展示'); warns++ }
 }
-
-const a = load('realCityData_citymap_pilot.js')
-const b = load('realCityData.js')
-let cities = 0
-if (a && a.REAL_REPORTS_CITYMAP) {
-  for (const [c, d] of Object.entries(a.REAL_REPORTS_CITYMAP)) {
-    checkCity(c, d)
-    cities++
-  }
-}
-if (b && b.REAL_REPORTS) {
-  for (const [c, d] of Object.entries(b.REAL_REPORTS)) {
-    checkCity(c, d)
-    cities++
-  }
-}
-
-if (warns.length) {
-  console.warn(`\n[validate_bake] 警告 ${warns.length} 条:`)
-  warns.slice(0, 20).forEach((w) => console.warn('  ! ' + w))
-}
-
-if (fail > 0) {
-  console.error(`\n[validate_bake] ✗ 失败: ${fail} 个问题，已阻止发布`)
-  errors.slice(0, 40).forEach((e) => console.error('  - ' + e))
-  process.exit(1)
-}
-console.log(`\n[validate_bake] ✓ 通过 (${cities} 城)`)
+console.log('[validate] 校验对象=' + src + ' cities=' + cities.length + ' errors=' + errors + ' warns=' + warns)
+if (errors > 0) { console.error('[validate] 校验失败，阻断发布'); process.exit(1) }
+console.log('[validate] 校验通过 ✅')
